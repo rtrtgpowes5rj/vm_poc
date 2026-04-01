@@ -2,6 +2,8 @@
 
 Training web app for vulnerability management scenarios, built with `React`, `TypeScript`, and `Vite`.
 
+Live site: [https://rtrtgpowes5rj.github.io/vm_poc/](https://rtrtgpowes5rj.github.io/vm_poc/)
+
 ## Local start
 
 ```powershell
