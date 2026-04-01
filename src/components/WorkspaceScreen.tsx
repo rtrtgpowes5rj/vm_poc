@@ -14,6 +14,7 @@ import {
   Wrench,
 } from 'lucide-react'
 import type { MissionMetrics, MissionObjective, MissionReviewItem } from '../lib/mission'
+import { createHintToken } from '../lib/hints'
 import type {
   AssetRole,
   ChangeWindow,
@@ -419,7 +420,7 @@ function GovernanceSection({
                 hintBankRemaining={hintBankRemaining}
                 hintText={question.hint ?? getGovernanceHint(question.id)}
                 hintUsed={question.hintUsed}
-                itemId={question.id}
+                hintToken={createHintToken('governanceQuestions', question.id)}
                 onRevealHint={onRevealHint}
                 selectionLabel={
                   question.multi
@@ -472,7 +473,7 @@ function GovernanceSection({
                 hintBankRemaining={hintBankRemaining}
                 hintText={task.hint ?? getGovernanceMappingHint()}
                 hintUsed={task.hintUsed}
-                itemId={task.id}
+                hintToken={createHintToken('governanceMappingTasks', task.id)}
                 onRevealHint={onRevealHint}
                 selectionLabel={`${task.rows.filter((row) => row.selectedRole !== null).length}/${task.rows.length} ролей сопоставлено`}
               />
@@ -590,7 +591,7 @@ function InventorySection({
                 hintBankRemaining={hintBankRemaining}
                 hintText={asset.hint ?? getInventoryHint(asset)}
                 hintUsed={asset.hintUsed}
-                itemId={asset.id}
+                hintToken={createHintToken('inventoryAssets', asset.id)}
                 onRevealHint={onRevealHint}
                 selectionLabel={
                   mode === 'classification'
@@ -695,7 +696,7 @@ function PrioritizationSection({
                 hintBankRemaining={hintBankRemaining}
                 hintText={task.hint ?? getRankingHint()}
                 hintUsed={task.hintUsed}
-                itemId={task.id}
+                hintToken={createHintToken('prioritizationRankingTasks', task.id)}
                 onRevealHint={onRevealHint}
                 selectionLabel={
                   task.touched
@@ -763,7 +764,7 @@ function PrioritizationSection({
                 hintBankRemaining={hintBankRemaining}
                 hintText={item.hint ?? getPrioritizationHint(item)}
                 hintUsed={item.hintUsed}
-                itemId={item.id}
+                hintToken={createHintToken('prioritizationCases', item.id)}
                 onRevealHint={onRevealHint}
                 selectionLabel={
                   mode === 'queue'
@@ -876,7 +877,7 @@ function ResponseSection({
                 hintBankRemaining={hintBankRemaining}
                 hintText={item.hint ?? getResponseHint(item)}
                 hintUsed={item.hintUsed}
-                itemId={item.id}
+                hintToken={createHintToken('responseCases', item.id)}
                 onRevealHint={onRevealHint}
                 selectionLabel={
                   mode === 'planning'
@@ -910,14 +911,14 @@ function ScenarioFooter({
   hintBankRemaining,
   hintText,
   hintUsed,
-  itemId,
+  hintToken,
   onRevealHint,
   selectionLabel,
 }: {
   hintBankRemaining: number
   hintText: string
   hintUsed?: boolean
-  itemId: string
+  hintToken: string
   onRevealHint: (itemId: string) => void
   selectionLabel: string
 }) {
@@ -938,7 +939,7 @@ function ScenarioFooter({
           type="button"
           className="hint-button"
           disabled={hintBankRemaining <= 0}
-          onClick={() => onRevealHint(itemId)}
+          onClick={() => onRevealHint(hintToken)}
         >
           <Lightbulb size={15} />
           {hintBankRemaining > 0 ? 'Показать подсказку' : 'Лимит подсказок исчерпан'}

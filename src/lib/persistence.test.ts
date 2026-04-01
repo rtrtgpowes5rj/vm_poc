@@ -47,4 +47,23 @@ describe('campaign persistence', () => {
         .selectedFactors,
     ).toContain('trend')
   })
+
+  it('normalizes hint balance against already opened hints', () => {
+    clearCampaignProgress()
+
+    const progress = createDefaultCampaignProgress()
+    progress.hintBankRemaining = 50
+
+    const firstHint = progress.missionStates['mission-process-charter'].governanceQuestions?.[0]
+
+    if (firstHint) {
+      firstHint.hintUsed = true
+    }
+
+    saveCampaignProgress(progress)
+
+    const restored = loadCampaignProgress()
+
+    expect(restored.hintBankRemaining).toBe(49)
+  })
 })

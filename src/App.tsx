@@ -13,6 +13,7 @@ import {
   getMissionReviewItems,
   getMissionScore,
 } from './lib/mission'
+import { markHintAsUsed } from './lib/hints'
 import { loadCampaignProgress, saveCampaignProgress } from './lib/persistence'
 import type {
   AppStage,
@@ -137,7 +138,7 @@ function App() {
     startRouting(() => setStage('brief'))
   }
 
-  const revealHint = (itemId: string) => {
+  const revealHint = (hintToken: string) => {
     if (hintBankRemaining <= 0) {
       return
     }
@@ -146,7 +147,7 @@ function App() {
 
     setMissionStates((current) => {
       const mission = current[selectedMissionId]
-      const nextMission = markHintAsUsed(mission, itemId)
+      const nextMission = markHintAsUsed(mission, hintToken)
       consumed = nextMission !== mission
 
       if (!consumed) {
@@ -551,32 +552,6 @@ function getNextChapter(
   }
 
   return null
-}
-
-function markHintAsUsed(mission: MissionState, itemId: string): MissionState {
-  let changed = false
-
-  const mark = <T extends { id: string; hintUsed?: boolean }>(items?: T[]) =>
-    items?.map((item) => {
-      if (item.id !== itemId || item.hintUsed) {
-        return item
-      }
-
-      changed = true
-      return { ...item, hintUsed: true }
-    })
-
-  const nextMission: MissionState = {
-    ...mission,
-    governanceQuestions: mark(mission.governanceQuestions),
-    governanceMappingTasks: mark(mission.governanceMappingTasks),
-    inventoryAssets: mark(mission.inventoryAssets),
-    prioritizationCases: mark(mission.prioritizationCases),
-    prioritizationRankingTasks: mark(mission.prioritizationRankingTasks),
-    responseCases: mark(mission.responseCases),
-  }
-
-  return changed ? nextMission : mission
 }
 
 export default App

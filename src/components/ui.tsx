@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
 import { Check, CheckCircle2, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import type { MissionReviewItem, ReviewStatus } from '../lib/mission'
 import {
   labelForDecision,
@@ -220,19 +221,129 @@ export function ControlSelect<T extends string>({
 }) {
   const [open, setOpen] = useState(false)
   const shellRef = useRef<HTMLDivElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>()
+  const [menuPlacement, setMenuPlacement] = useState<'top' | 'bottom'>('bottom')
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
-      if (!shellRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node
+
+      if (!shellRef.current?.contains(target) && !menuRef.current?.contains(target)) {
+        setOpen(false)
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
         setOpen(false)
       }
     }
 
     window.addEventListener('mousedown', handlePointerDown)
-    return () => window.removeEventListener('mousedown', handlePointerDown)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [])
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const updatePosition = () => {
+      const shell = shellRef.current
+
+      if (!shell) {
+        return
+      }
+
+      const rect = shell.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const viewportWidth = window.innerWidth
+      const preferredHeight = Math.min(options.length * 76 + 16, 360)
+      const availableBelow = viewportHeight - rect.bottom - 14
+      const availableAbove = rect.top - 14
+      const openUpward =
+        availableBelow < Math.min(preferredHeight, 220) && availableAbove > availableBelow
+      const maxHeight = Math.max(
+        160,
+        Math.min(openUpward ? availableAbove - 12 : availableBelow - 12, 360),
+      )
+      const width = Math.min(rect.width, viewportWidth - 24)
+      const left = Math.max(12, Math.min(rect.left, viewportWidth - width - 12))
+      const top = openUpward
+        ? Math.max(12, rect.top - maxHeight - 8)
+        : Math.min(viewportHeight - maxHeight - 12, rect.bottom + 8)
+
+      setMenuPlacement(openUpward ? 'top' : 'bottom')
+      setMenuStyle({
+        position: 'fixed',
+        top,
+        left,
+        width,
+        maxHeight,
+        zIndex: 140,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [open, options.length])
+
   const selectedOption = options.find((option) => option.value === value) ?? null
+
+  const menu =
+    open && typeof document !== 'undefined'
+      ? createPortal(
+          <motion.div
+            ref={menuRef}
+            style={menuStyle}
+            className={`control-select__menu control-select__menu--${menuPlacement}`}
+            initial={{ opacity: 0, y: menuPlacement === 'bottom' ? -4 : 4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: menuPlacement === 'bottom' ? -4 : 4, scale: 0.98 }}
+            transition={{ duration: 0.14 }}
+          >
+            {options.map((option) => {
+              const active = option.value === value
+
+              return (
+                <motion.button
+                  key={option.value}
+                  type="button"
+                  className={`control-select__option ${
+                    active ? 'control-select__option--active' : ''
+                  }`}
+                  onClick={() => {
+                    onChange(option.value)
+                    setOpen(false)
+                  }}
+                  whileHover={{ x: 2 }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <span className="control-select__copy">
+                    <span className="control-select__value">{option.label}</span>
+                    {option.meta ? (
+                      <small className="control-select__meta">{option.meta}</small>
+                    ) : null}
+                  </span>
+                  {active ? <Check size={16} /> : null}
+                </motion.button>
+              )
+            })}
+          </motion.div>,
+          document.body,
+        )
+      : null
 
   return (
     <div ref={shellRef} className={`control-select ${open ? 'control-select--open' : ''}`}>
@@ -252,44 +363,7 @@ export function ControlSelect<T extends string>({
         </span>
         <ChevronDown size={16} />
       </motion.button>
-
-      {open ? (
-        <motion.div
-          className="control-select__menu"
-          initial={{ opacity: 0, y: -4, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -4, scale: 0.98 }}
-          transition={{ duration: 0.14 }}
-        >
-          {options.map((option) => {
-            const active = option.value === value
-
-            return (
-              <motion.button
-                key={option.value}
-                type="button"
-                className={`control-select__option ${
-                  active ? 'control-select__option--active' : ''
-                }`}
-                onClick={() => {
-                  onChange(option.value)
-                  setOpen(false)
-                }}
-                whileHover={{ x: 2 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <span className="control-select__copy">
-                  <span className="control-select__value">{option.label}</span>
-                  {option.meta ? (
-                    <small className="control-select__meta">{option.meta}</small>
-                  ) : null}
-                </span>
-                {active ? <Check size={16} /> : null}
-              </motion.button>
-            )
-          })}
-        </motion.div>
-      ) : null}
+      {menu}
     </div>
   )
 }

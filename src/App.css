@@ -2212,3 +2212,47 @@
     font-size: 0.66rem;
   }
 }
+
+.brief-list__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.55rem;
+  border: 1px solid rgba(252, 62, 36, 0.18);
+  border-radius: 999px;
+  background: rgba(252, 62, 36, 0.08);
+  color: var(--accent-alt);
+  font-size: 0.74rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+}
+
+.brief-list__item p {
+  margin: 0;
+}
+
+.control-select {
+  isolation: isolate;
+}
+
+.control-select--open {
+  z-index: 24;
+}
+
+.control-select__menu {
+  right: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.control-select__menu--top {
+  transform-origin: bottom center;
+}
+
+.control-select__menu--bottom {
+  transform-origin: top center;
+}

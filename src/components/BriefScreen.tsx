@@ -99,11 +99,11 @@ export function BriefScreen({
           </div>
 
           <div className="brief-block">
-            <h3>На что смотрит методика</h3>
+            <h3>Что должно быть зафиксировано</h3>
             <div className="brief-list">
-              {mission.learningGoals.map((item) => (
+              {mission.learningGoals.map((item, index) => (
                 <div key={item} className="brief-list__item">
-                  <strong>Контрольная опора</strong>
+                  <span className="brief-list__index">{String(index + 1).padStart(2, '0')}</span>
                   <p>{item}</p>
                 </div>
               ))}

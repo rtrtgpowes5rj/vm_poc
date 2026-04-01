@@ -1,4 +1,5 @@
 import { campaignChapters, createAllMissionStates } from '../data/campaign'
+import { countUsedHintsInCampaign } from './hints'
 import type { CampaignChapter, MissionState } from '../types'
 
 const STORAGE_KEY = 'vm-control-room.save.v4'
@@ -40,16 +41,19 @@ export function loadCampaignProgress(): CampaignProgress {
       return fallback
     }
 
+    const missionStates = parsed.missionStates ?? fallback.missionStates
+    const maxHintBalance = Math.max(50 - countUsedHintsInCampaign(missionStates), 0)
+
     return {
       chapters: parsed.chapters?.map((chapter) => ({ ...chapter })) ?? fallback.chapters,
       selectedMissionId:
         typeof parsed.selectedMissionId === 'string'
           ? parsed.selectedMissionId
           : fallback.selectedMissionId,
-      missionStates: parsed.missionStates ?? fallback.missionStates,
+      missionStates,
       hintBankRemaining:
         typeof parsed.hintBankRemaining === 'number'
-          ? parsed.hintBankRemaining
+          ? Math.min(parsed.hintBankRemaining, maxHintBalance)
           : fallback.hintBankRemaining,
     }
   } catch {
