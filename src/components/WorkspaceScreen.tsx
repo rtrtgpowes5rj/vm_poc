@@ -13,14 +13,6 @@ import {
   Sparkles,
   Wrench,
 } from 'lucide-react'
-import {
-  getInventoryModeStatus,
-  getPrioritizationModeStatus,
-  getPrioritizationRankingTaskStatus,
-  getPrioritizationWaveTaskStatus,
-  getResponseModeStatus,
-  getResponseSequenceTaskStatus,
-} from '../lib/mission'
 import type { MissionMetrics, MissionObjective, MissionReviewItem } from '../lib/mission'
 import { createHintToken } from '../lib/hints'
 import type {
@@ -48,7 +40,7 @@ import {
   InlineOption,
   MetricRail,
   Panel,
-  ReviewBadge,
+  StatusBadge,
   ReviewItemCard,
   StakeholderCard,
   labelForAssetRoleUi,
@@ -128,8 +120,6 @@ export function WorkspaceScreen({
   onToggleResponseVerification: (caseId: string, step: VerificationStep) => void
 }) {
   const tabs = getTabsForMission(mission)
-  const reviewMap = new Map(reviewItems.map((item) => [item.id, item]))
-
   return (
     <section className="workspace-layout">
       <div className="workspace-head">
@@ -220,7 +210,6 @@ export function WorkspaceScreen({
                 (item) => item.section === 'charter',
               )}
               questions={(mission.governanceQuestions ?? []).filter((item) => item.section === 'charter')}
-              reviewMap={reviewMap}
               onRevealHint={onRevealHint}
               onSetGovernanceMappingRole={onSetGovernanceMappingRole}
               onToggleGovernanceOption={onToggleGovernanceOption}
@@ -234,7 +223,6 @@ export function WorkspaceScreen({
                 (item) => item.section === 'agreements',
               )}
               questions={(mission.governanceQuestions ?? []).filter((item) => item.section === 'agreements')}
-              reviewMap={reviewMap}
               onRevealHint={onRevealHint}
               onSetGovernanceMappingRole={onSetGovernanceMappingRole}
               onToggleGovernanceOption={onToggleGovernanceOption}
@@ -393,7 +381,6 @@ function GovernanceSection({
   hintBankRemaining,
   mappingTasks,
   questions,
-  reviewMap,
   onRevealHint,
   onSetGovernanceMappingRole,
   onToggleGovernanceOption,
@@ -401,26 +388,26 @@ function GovernanceSection({
   hintBankRemaining: number
   mappingTasks: GovernanceMappingTask[]
   questions: GovernanceQuestion[]
-  reviewMap: Map<string, MissionReviewItem>
   onRevealHint: (itemId: string) => void
   onSetGovernanceMappingRole: (taskId: string, rowId: string, role: AssetRole) => void
   onToggleGovernanceOption: (questionId: string, optionId: string) => void
 }) {
   return (
     <Panel title="Процессные решения" icon={Radar}>
-      <div className="scenario-list">
-        {questions.map((question) => {
-          const reviewItem = reviewMap.get(question.id)
-
-          return (
-            <div key={question.id} className="scenario-card">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{question.title}</strong>
-                  <p>{question.prompt}</p>
+        <div className="scenario-list">
+          {questions.map((question) => {
+            return (
+              <div key={question.id} className="scenario-card">
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{question.title}</strong>
+                    <p>{question.prompt}</p>
+                  </div>
+                  <StatusBadge
+                    tone="progress"
+                    label={getGovernanceQuestionProgressLabel(question)}
+                  />
                 </div>
-                {reviewItem ? <ReviewBadge status={reviewItem.status} /> : null}
-              </div>
 
               <div className="choice-grid">
                 {question.options.map((option) => (
@@ -453,17 +440,15 @@ function GovernanceSection({
         })}
 
         {mappingTasks.map((task) => {
-          const reviewItem = reviewMap.get(task.id)
-
           return (
             <div key={task.id} className="scenario-card">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{task.title}</strong>
-                  <p>{task.prompt}</p>
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{task.title}</strong>
+                    <p>{task.prompt}</p>
+                  </div>
+                  <StatusBadge tone="progress" label={getMappingProgressLabel(task)} />
                 </div>
-                {reviewItem ? <ReviewBadge status={reviewItem.status} /> : null}
-              </div>
 
               <div className="mapping-grid">
                 {task.rows.map((row) => (
@@ -526,18 +511,18 @@ function InventorySection({
       icon={Server}
     >
       <div className="scenario-list">
-        {assets.map((asset) => {
-          const status = getInventoryModeStatus(asset, mode)
+          {assets.map((asset) => {
+            const statusLabel = getInventoryProgressLabel(asset, mode)
 
-          return (
-            <div key={asset.id} className="scenario-card">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{asset.name}</strong>
-                  <p>{asset.description}</p>
+            return (
+              <div key={asset.id} className="scenario-card">
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{asset.name}</strong>
+                    <p>{asset.description}</p>
+                  </div>
+                  <StatusBadge tone="progress" label={statusLabel} />
                 </div>
-                <ReviewBadge status={status} />
-              </div>
 
               <div className="scenario-meta">
                 <span className="inline-tag">{asset.zone}</span>
@@ -658,19 +643,21 @@ function PrioritizationSection({
       icon={Radar}
     >
       <div className="scenario-list">
-        {waveTasks.map((task) => {
-          const status = getPrioritizationWaveTaskStatus(task)
-          const selectedCount = task.selectedOptionIds.length
+          {waveTasks.map((task) => {
+            const selectedCount = task.selectedOptionIds.length
 
-          return (
-            <div key={task.id} className="scenario-card">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{task.title}</strong>
-                  <p>{task.prompt}</p>
+            return (
+              <div key={task.id} className="scenario-card">
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{task.title}</strong>
+                    <p>{task.prompt}</p>
+                  </div>
+                  <StatusBadge
+                    tone="progress"
+                    label={`${selectedCount}/${task.selectionLimit} слотов`}
+                  />
                 </div>
-                <ReviewBadge status={status} />
-              </div>
 
               <div className="choice-grid">
                 {task.options.map((option) => {
@@ -705,18 +692,16 @@ function PrioritizationSection({
           )
         })}
 
-        {rankingTasks.map((task) => {
-          const status = getPrioritizationRankingTaskStatus(task)
-
-          return (
-            <div key={task.id} className="scenario-card scenario-card--priority">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{task.title}</strong>
-                  <p>{task.prompt}</p>
+          {rankingTasks.map((task) => {
+            return (
+              <div key={task.id} className="scenario-card scenario-card--priority">
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{task.title}</strong>
+                    <p>{task.prompt}</p>
+                  </div>
+                  <StatusBadge tone="progress" label={getRankingProgressLabel(task)} />
                 </div>
-                <ReviewBadge status={status} />
-              </div>
 
               <div className="ranking-list">
                 {task.selectedOrderIds.map((entryId, index) => {
@@ -772,18 +757,16 @@ function PrioritizationSection({
           )
         })}
 
-        {cases.map((item) => {
-          const status = getPrioritizationModeStatus(item, mode)
-
-          return (
-            <div key={item.id} className="scenario-card">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.summary}</p>
+          {cases.map((item) => {
+            return (
+              <div key={item.id} className="scenario-card">
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.summary}</p>
+                  </div>
+                  <StatusBadge tone="progress" label={getPrioritizationProgressLabel(item, mode)} />
                 </div>
-                <ReviewBadge status={status} />
-              </div>
 
               <div className="scenario-meta">
                 <span className={`inline-tag inline-tag--${item.severity}`}>{item.severity}</span>
@@ -866,18 +849,16 @@ function ResponseSection({
   return (
     <Panel title={mode === 'planning' ? 'План устранения' : 'Контроль устранения'} icon={Wrench}>
       <div className="scenario-list">
-        {cases.map((item) => {
-          const status = getResponseModeStatus(item, mode)
-
-          return (
-            <div key={item.id} className="scenario-card">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.summary}</p>
+          {cases.map((item) => {
+            return (
+              <div key={item.id} className="scenario-card">
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{item.title}</strong>
+                    <p>{item.summary}</p>
+                  </div>
+                  <StatusBadge tone="progress" label={getResponseProgressLabel(item, mode)} />
                 </div>
-                <ReviewBadge status={status} />
-              </div>
 
               <div className="scenario-meta">
                 <span className="inline-tag">{item.assetName}</span>
@@ -971,18 +952,16 @@ function ResponsePlaybookSection({
   return (
     <Panel title="Плейбуки и эскалации" icon={Wrench}>
       <div className="scenario-list">
-        {tasks.map((task) => {
-          const status = getResponseSequenceTaskStatus(task)
-
-          return (
-            <div key={task.id} className="scenario-card scenario-card--priority">
-              <div className="scenario-card__head">
-                <div>
-                  <strong>{task.title}</strong>
-                  <p>{task.prompt}</p>
+          {tasks.map((task) => {
+            return (
+              <div key={task.id} className="scenario-card scenario-card--priority">
+                <div className="scenario-card__head">
+                  <div>
+                    <strong>{task.title}</strong>
+                    <p>{task.prompt}</p>
+                  </div>
+                  <StatusBadge tone="progress" label={getSequenceProgressLabel(task)} />
                 </div>
-                <ReviewBadge status={status} />
-              </div>
 
               <div className="ranking-list">
                 {task.selectedOrderIds.map((entryId, index) => {
@@ -1229,6 +1208,86 @@ function getResponsePlaybookHint(taskId: string) {
   }
 
   return 'Пересмотр SLA начинается с анализа причины срыва и операционных ограничений, а не с косметической смены цифры в таблице.'
+}
+
+function getGovernanceQuestionProgressLabel(question: GovernanceQuestion) {
+  if (question.selectedOptionIds.length === 0) {
+    return 'не заполнено'
+  }
+
+  return question.multi ? `${question.selectedOptionIds.length} выбрано` : 'ответ выбран'
+}
+
+function getMappingProgressLabel(task: GovernanceMappingTask) {
+  const answered = task.rows.filter((row) => row.selectedRole !== null).length
+
+  if (answered === 0) {
+    return 'не заполнено'
+  }
+
+  return `${answered}/${task.rows.length} ролей`
+}
+
+function getInventoryProgressLabel(asset: InventoryAsset, mode: 'classification' | 'scan') {
+  if (mode === 'classification') {
+    const answered = [asset.selectedRole !== null, asset.selectedSla !== null].filter(Boolean).length
+
+    if (answered === 0) {
+      return 'не заполнено'
+    }
+
+    if (answered === 1) {
+      return 'ввод'
+    }
+
+    return 'заполнено'
+  }
+
+  return asset.selectedScanStrategy === null ? 'ожидает' : 'выбрано'
+}
+
+function getPrioritizationProgressLabel(item: PrioritizationCase, mode: 'queue' | 'factors') {
+  if (mode === 'queue') {
+    return item.selectedDecision === null ? 'не задано' : 'решение выбрано'
+  }
+
+  return item.selectedFactors.length === 0 ? 'не задано' : `${item.selectedFactors.length} факторов`
+}
+
+function getRankingProgressLabel(task: { selectedOrderIds: string[]; touched?: boolean }) {
+  if (!task.touched) {
+    return 'не собрано'
+  }
+
+  return `${task.selectedOrderIds.length} позиций`
+}
+
+function getResponseProgressLabel(item: ResponseCase, mode: 'planning' | 'control') {
+  if (mode === 'planning') {
+    const answered = [item.selectedMethod !== null, item.selectedWindow !== null].filter(Boolean).length
+
+    if (answered === 0) {
+      return 'не заполнено'
+    }
+
+    if (answered === 1) {
+      return 'ввод'
+    }
+
+    return 'заполнено'
+  }
+
+  return item.selectedVerification.length === 0
+    ? 'не задано'
+    : `${item.selectedVerification.length} шагов`
+}
+
+function getSequenceProgressLabel(task: ResponseSequenceTask) {
+  if (!task.touched) {
+    return 'не собрано'
+  }
+
+  return `${task.selectedOrderIds.length} позиций`
 }
 
 function getTabsForMission(mission: MissionState) {

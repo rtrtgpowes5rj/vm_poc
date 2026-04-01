@@ -104,8 +104,20 @@ export function StakeholderCard({ stakeholder }: { stakeholder: Stakeholder }) {
   )
 }
 
+export type StatusBadgeTone = ReviewStatus | 'progress'
+
+export function StatusBadge({
+  label,
+  tone,
+}: {
+  label: string
+  tone: StatusBadgeTone
+}) {
+  return <span className={`status-badge status-badge--${tone}`}>{label}</span>
+}
+
 export function ReviewBadge({ status }: { status: ReviewStatus }) {
-  return <span className={`status-badge status-badge--${status}`}>{labelForStatus(status)}</span>
+  return <StatusBadge tone={status} label={labelForStatus(status)} />
 }
 
 export function ReviewItemCard({ item }: { item: MissionReviewItem }) {
