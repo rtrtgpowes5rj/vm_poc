@@ -129,6 +129,21 @@ describe('mission mechanics', () => {
     }
   })
 
+  it('models virtual IP as context-only inventory object, not as standalone host', () => {
+    const mission = createMissionState('mission-asset-inventory')
+    const vip = mission.inventoryAssets?.find((item) => item.id === 'asset-vip')
+
+    expect(vip).toBeTruthy()
+
+    if (!vip) {
+      return
+    }
+
+    expect(vip.expectedRole).toBe('support')
+    expect(vip.expectedScanStrategy).toBe('exclude')
+    expect(vip.expectedSla).toBe('exception')
+  })
+
   it('prioritization mechanics accept intended answers and reject blanket over-selection', () => {
     const mission = createMissionState('mission-risk-prioritization')
 

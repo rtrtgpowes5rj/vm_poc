@@ -13,6 +13,7 @@ describe('campaign persistence', () => {
     const progress = createDefaultCampaignProgress()
     progress.selectedMissionId = 'mission-risk-prioritization'
     progress.hintBankRemaining = 41
+    progress.allowFreePhaseAccess = false
     progress.chapters[0].status = 'completed'
     progress.chapters[1].status = 'completed'
     progress.chapters[2].status = 'available'
@@ -34,6 +35,7 @@ describe('campaign persistence', () => {
 
     expect(restored.selectedMissionId).toBe('mission-risk-prioritization')
     expect(restored.hintBankRemaining).toBe(41)
+    expect(restored.allowFreePhaseAccess).toBe(false)
     expect(restored.chapters[0].status).toBe('completed')
     expect(
       restored.missionStates['mission-process-charter'].governanceQuestions?.[0].selectedOptionIds,
@@ -65,5 +67,13 @@ describe('campaign persistence', () => {
     const restored = loadCampaignProgress()
 
     expect(restored.hintBankRemaining).toBe(49)
+  })
+
+  it('enables free phase access by default for test walkthroughs', () => {
+    clearCampaignProgress()
+
+    const progress = createDefaultCampaignProgress()
+
+    expect(progress.allowFreePhaseAccess).toBe(true)
   })
 })

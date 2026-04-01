@@ -396,7 +396,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         zone: 'Internal / Identity',
         owner: 'Workplace Ops',
         description:
-          'Контроллер домена, через который attacker может резко упростить дальнейшее развитие атаки на целевые системы.',
+          'Контроллер домена, через который злоумышленник может резко упростить дальнейшее развитие атаки на целевые системы.',
         sources: ['CMDB', 'AD inventory', 'Реестр владельцев сервисов'],
         importance: 'critical',
         explanation:
@@ -453,14 +453,16 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
           'Виртуальный IP балансировщика/WAF-кластера. Нужен для маршрутизации, но не является самостоятельным хостом.',
         sources: ['NetBox', 'Сетевые схемы', 'Документация по кластеру'],
         importance: 'important',
+        hint:
+          'Virtual IP полезен как маркер периметра и связи с сервисом, но не как отдельный узел с собственным патчингом. В учебной модели его лучше вести как вспомогательный объект, исключённый из host-сканирования и заведённый в режим исключения.',
         explanation:
-          'Virtual IP важен для контекста, но как отдельный “хост” не сканируется. Его нужно корректно исключать, не теряя связи с периметром.',
+          'Virtual IP должен оставаться в реестре и связываться с периметровым сервисом, но не трактоваться как самостоятельный хост для аудита и патчинга. Для него корректнее режим исключения с привязкой к владельцу и компенсирующим мерам на уровне кластера/сервиса.',
         selectedRole: null,
-        expectedRole: 'entry-point',
+        expectedRole: 'support',
         selectedScanStrategy: null,
         expectedScanStrategy: 'exclude',
         selectedSla: null,
-        expectedSla: '24h',
+        expectedSla: 'exception',
       },
       {
         id: 'asset-qa',

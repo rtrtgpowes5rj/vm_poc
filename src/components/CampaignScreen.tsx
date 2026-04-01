@@ -3,11 +3,15 @@ import { AlertTriangle, ChevronRight } from 'lucide-react'
 import type { CampaignChapter } from '../types'
 
 export function CampaignScreen({
+  allowFreePhaseAccess,
   chapters,
   onSelect,
+  onToggleFreePhaseAccess,
 }: {
+  allowFreePhaseAccess: boolean
   chapters: CampaignChapter[]
   onSelect: (missionId: string) => void
+  onToggleFreePhaseAccess: () => void
 }) {
   const completedCount = chapters.filter((chapter) => chapter.status === 'completed').length
 
@@ -23,7 +27,18 @@ export function CampaignScreen({
           <div className="campaign-hero__copy">
             <div className="campaign-hero__topline">
               <p className="eyebrow">campaign / vm maturity</p>
-              <span className="campaign-hero__status">live scenario</span>
+              <div className="campaign-hero__controls">
+                <button
+                  type="button"
+                  className={`campaign-access-toggle ${
+                    allowFreePhaseAccess ? 'campaign-access-toggle--active' : ''
+                  }`}
+                  onClick={onToggleFreePhaseAccess}
+                >
+                  {allowFreePhaseAccess ? 'test access / all phases' : 'guided access'}
+                </button>
+                <span className="campaign-hero__status">live scenario</span>
+              </div>
             </div>
 
             <h2>
@@ -90,7 +105,7 @@ export function CampaignScreen({
                 <div key={chapter.id} className={`campaign-node campaign-node--${chapter.status}`}>
                   <span>{String(index + 1).padStart(2, '0')}</span>
                   <strong>{chapter.title}</strong>
-                  <small>{labelForMissionStatus(chapter.status)}</small>
+                  <small>{labelForMissionStatus(chapter.status, allowFreePhaseAccess)}</small>
                 </div>
               ))}
             </div>
@@ -100,7 +115,8 @@ export function CampaignScreen({
 
       <div className="campaign-rail">
         {chapters.map((chapter, index) => {
-          const isLocked = chapter.status === 'locked'
+          const isLocked = chapter.status === 'locked' && !allowFreePhaseAccess
+          const testUnlocked = chapter.status === 'locked' && allowFreePhaseAccess
 
           return (
             <motion.button
@@ -125,7 +141,7 @@ export function CampaignScreen({
 
                 <span className="mission-state">
                   {isLocked ? <AlertTriangle size={16} /> : <ChevronRight size={16} />}
-                  {labelForMissionStatus(chapter.status)}
+                  {labelForMissionStatus(chapter.status, allowFreePhaseAccess)}
                 </span>
               </div>
 
@@ -143,6 +159,11 @@ export function CampaignScreen({
                   <AlertTriangle size={14} />
                   Откроется после завершения предыдущей фазы
                 </div>
+              ) : testUnlocked ? (
+                <div className="mission-lockline mission-lockline--test">
+                  <ChevronRight size={14} />
+                  Доступно в тестовом режиме без prerequisite
+                </div>
               ) : null}
             </motion.button>
           )
@@ -152,7 +173,10 @@ export function CampaignScreen({
   )
 }
 
-function labelForMissionStatus(status: CampaignChapter['status']) {
+function labelForMissionStatus(
+  status: CampaignChapter['status'],
+  allowFreePhaseAccess: boolean,
+) {
   if (status === 'completed') {
     return 'stabilized'
   }
@@ -163,6 +187,10 @@ function labelForMissionStatus(status: CampaignChapter['status']) {
 
   if (status === 'available') {
     return 'available'
+  }
+
+  if (allowFreePhaseAccess) {
+    return 'test access'
   }
 
   return 'locked'

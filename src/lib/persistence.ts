@@ -9,6 +9,7 @@ export type CampaignProgress = {
   selectedMissionId: string
   missionStates: Record<string, MissionState>
   hintBankRemaining: number
+  allowFreePhaseAccess: boolean
 }
 
 export function createDefaultCampaignProgress(): CampaignProgress {
@@ -17,6 +18,7 @@ export function createDefaultCampaignProgress(): CampaignProgress {
     selectedMissionId: campaignChapters[0].id,
     missionStates: createAllMissionStates(),
     hintBankRemaining: 50,
+    allowFreePhaseAccess: true,
   }
 }
 
@@ -55,6 +57,10 @@ export function loadCampaignProgress(): CampaignProgress {
         typeof parsed.hintBankRemaining === 'number'
           ? Math.min(parsed.hintBankRemaining, maxHintBalance)
           : fallback.hintBankRemaining,
+      allowFreePhaseAccess:
+        typeof parsed.allowFreePhaseAccess === 'boolean'
+          ? parsed.allowFreePhaseAccess
+          : fallback.allowFreePhaseAccess,
     }
   } catch {
     return fallback

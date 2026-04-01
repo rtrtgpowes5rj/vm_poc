@@ -4,12 +4,14 @@ import type { MissionObjective } from '../lib/mission'
 import type { CampaignChapter, MissionState } from '../types'
 
 export function BriefScreen({
+  allowFreePhaseAccess,
   chapter,
   mission,
   objectives,
   onBack,
   onStart,
 }: {
+  allowFreePhaseAccess: boolean
   chapter: CampaignChapter
   mission: MissionState
   objectives: MissionObjective[]
@@ -28,6 +30,9 @@ export function BriefScreen({
           <span>{chapter.phase}</span>
           <span>{chapter.estimated}</span>
           <span>{mission.code}</span>
+          {allowFreePhaseAccess && chapter.status === 'locked' ? (
+            <span>test access</span>
+          ) : null}
         </div>
       </div>
 

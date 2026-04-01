@@ -276,6 +276,10 @@
   gap: 0.6rem;
 }
 
+.mission-lockline--test {
+  color: var(--accent-alt);
+}
+
 .mission-summary,
 .mission-stakes,
 .objective-card p,
@@ -1637,6 +1641,46 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.campaign-hero__controls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.campaign-access-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.78rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease;
+}
+
+.campaign-access-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(252, 62, 36, 0.28);
+  color: var(--text);
+}
+
+.campaign-access-toggle--active {
+  border-color: rgba(252, 62, 36, 0.22);
+  background: rgba(252, 62, 36, 0.08);
+  color: var(--accent-alt);
 }
 
 .campaign-kpis {

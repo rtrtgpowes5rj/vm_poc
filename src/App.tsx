@@ -37,6 +37,9 @@ function App() {
   const [missionStates, setMissionStates] = useState(initialProgress.missionStates)
   const [selectedMissionId, setSelectedMissionId] = useState(initialProgress.selectedMissionId)
   const [hintBankRemaining, setHintBankRemaining] = useState(initialProgress.hintBankRemaining)
+  const [allowFreePhaseAccess, setAllowFreePhaseAccess] = useState(
+    initialProgress.allowFreePhaseAccess,
+  )
   const [stage, setStage] = useState<AppStage>('campaign')
   const [isRouting, startRouting] = useTransition()
 
@@ -44,7 +47,7 @@ function App() {
     chapters.find((chapter) => chapter.id === selectedMissionId) ?? chapters[0]
   const currentMission =
     missionStates[selectedMissionId] ?? missionStates[campaignChapters[0].id]
-  const nextChapter = getNextChapter(chapters, selectedMissionId)
+  const nextChapter = getNextChapter(chapters, selectedMissionId, allowFreePhaseAccess)
   const completedCount = chapters.filter((chapter) => chapter.status === 'completed').length
 
   const [activeTab, setActiveTab] = useState<MissionTab>(getDefaultTab(currentMission))
@@ -60,8 +63,9 @@ function App() {
       selectedMissionId,
       missionStates,
       hintBankRemaining,
+      allowFreePhaseAccess,
     })
-  }, [chapters, hintBankRemaining, missionStates, selectedMissionId])
+  }, [allowFreePhaseAccess, chapters, hintBankRemaining, missionStates, selectedMissionId])
 
   const updateMission = (
     missionId: string,
@@ -80,7 +84,10 @@ function App() {
   }
 
   const beginMission = () => {
-    if (selectedChapter.status === 'locked' || !selectedChapter.implemented) {
+    if (
+      (selectedChapter.status === 'locked' && !allowFreePhaseAccess) ||
+      !selectedChapter.implemented
+    ) {
       return
     }
 
@@ -476,7 +483,14 @@ function App() {
               exit={{ opacity: 0, y: -24, scale: 0.992, filter: 'blur(8px)' }}
               transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
-              <CampaignScreen chapters={chapters} onSelect={openMission} />
+              <CampaignScreen
+                allowFreePhaseAccess={allowFreePhaseAccess}
+                chapters={chapters}
+                onSelect={openMission}
+                onToggleFreePhaseAccess={() =>
+                  setAllowFreePhaseAccess((current) => !current)
+                }
+              />
             </motion.div>
           ) : null}
 
@@ -489,6 +503,7 @@ function App() {
               transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
               <BriefScreen
+                allowFreePhaseAccess={allowFreePhaseAccess}
                 chapter={selectedChapter}
                 mission={currentMission}
                 objectives={objectives}
@@ -599,6 +614,7 @@ function getDefaultTab(mission: MissionState) {
 function getNextChapter(
   chapters: typeof campaignChapters,
   currentMissionId: string,
+  allowFreePhaseAccess?: boolean,
 ) {
   const currentIndex = chapters.findIndex((chapter) => chapter.id === currentMissionId)
 
@@ -609,7 +625,7 @@ function getNextChapter(
   for (let index = currentIndex + 1; index < chapters.length; index += 1) {
     const candidate = chapters[index]
 
-    if (candidate.status === 'available') {
+    if (allowFreePhaseAccess ? candidate.implemented : candidate.status === 'available') {
       return candidate
     }
   }
