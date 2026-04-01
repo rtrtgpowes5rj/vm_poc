@@ -1,4 +1,13 @@
-import { ArrowLeft, ArrowRight, Gauge, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Gauge,
+  RotateCcw,
+  ShieldCheck,
+  Sparkles,
+  Target,
+} from 'lucide-react'
 import type { MissionMetrics, MissionObjective, MissionReviewItem } from '../lib/mission'
 import type { CampaignChapter, MissionState } from '../types'
 import { CompletedObjective, MetricRail, Panel, ReviewItemCard } from './ui'
@@ -29,19 +38,30 @@ export function DebriefScreen({
 
   return (
     <section className="debrief-layout">
-      <div className="debrief-hero">
-        <p className="eyebrow">after action review</p>
-        <h2>{mission.title} завершена</h2>
-        <p>
-          Итоговый разбор показывает, насколько решения соответствовали методике VM: есть ли у
-          процесса опора на бизнес-контекст, правильно ли выбран путь обработки и где ещё
-          остаются системные пробелы.
-        </p>
-
-        <div className="debrief-score">
-          <span>{score}</span>
-          <small>из 100</small>
+      <div className="debrief-hero debrief-hero--cinematic">
+        <div className="debrief-hero__copy">
+          <p className="eyebrow">after action review</p>
+          <h2>{mission.title} завершена</h2>
+          <p>
+            Итоговый разбор показывает, насколько решения выдержали методическую
+            проверку: есть ли у процесса опора на бизнес-контекст, правильно ли
+            выбран путь обработки и где ещё остаются системные пробелы.
+          </p>
         </div>
+
+        <motion.div
+          className="debrief-score debrief-score--ring"
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1, duration: 0.55 }}
+        >
+          <div className="debrief-score__ring" />
+          <div className="debrief-score__core">
+            <small>score</small>
+            <span>{score}</span>
+            <small>из 100</small>
+          </div>
+        </motion.div>
       </div>
 
       <div className="debrief-grid">
@@ -72,7 +92,7 @@ export function DebriefScreen({
           />
         </Panel>
 
-        <Panel title="Что засчитано" icon={ShieldCheck}>
+        <Panel title="Что зачтено" icon={ShieldCheck}>
           <div className="completed-objectives">
             {completedObjectives.length > 0 ? (
               completedObjectives.map((objective) => (
@@ -84,22 +104,22 @@ export function DebriefScreen({
               ))
             ) : (
               <div className="empty-state">
-                Пока ни одна из целевых задач не закрыта полностью. Это полезный сигнал:
-                методический каркас ещё не устойчив.
+                Пока ни одна из целевых задач не закрыта полностью. Это полезный
+                сигнал: методический каркас ещё не стал устойчивым.
               </div>
             )}
           </div>
         </Panel>
       </div>
 
-      <Panel title="Незакрытые пробелы" icon={Sparkles}>
+      <Panel title="Незакрытые пробелы" icon={Target}>
         <div className="review-list">
           {gaps.length > 0 ? (
             gaps.map((item) => <ReviewItemCard key={item.id} item={item} />)
           ) : (
             <div className="empty-state">
-              Все проверяемые элементы закрыты корректно. Эта фаза выдержала методическую
-              проверку.
+              Все проверяемые элементы закрыты корректно. Эта фаза выдержала
+              методическую проверку.
             </div>
           )}
         </div>
@@ -117,7 +137,7 @@ export function DebriefScreen({
           </button>
         </div>
 
-        <button type="button" className="primary-button" onClick={onContinue}>
+        <button type="button" className="primary-button primary-button--hero" onClick={onContinue}>
           {nextChapter ? `К следующей фазе: ${nextChapter.title}` : 'Вернуться к кампании'}
           <ArrowRight size={16} />
         </button>
@@ -126,7 +146,7 @@ export function DebriefScreen({
       {nextChapter ? (
         <div className="unlock-banner">
           <Sparkles size={18} />
-          Следующая фаза уже разблокирована: {nextChapter.title}. Можно сразу перейти дальше и
+          Следующая фаза уже разблокирована: {nextChapter.title}. Можно сразу
           продолжить кампанию без повторного запуска текущей миссии.
         </div>
       ) : null}

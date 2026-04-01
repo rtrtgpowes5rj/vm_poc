@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Gauge, Lightbulb, ShieldCheck, Sparkles, Workflow } from 'lucide-react'
+import { Activity, Gauge, Lightbulb, ShieldCheck, Sparkles, Workflow } from 'lucide-react'
 import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import './App.css'
 import { BriefScreen } from './components/BriefScreen'
@@ -44,6 +44,7 @@ function App() {
   const currentMission =
     missionStates[selectedMissionId] ?? missionStates[campaignChapters[0].id]
   const nextChapter = getNextChapter(chapters, selectedMissionId)
+  const completedCount = chapters.filter((chapter) => chapter.status === 'completed').length
 
   const [activeTab, setActiveTab] = useState<MissionTab>(getDefaultTab(currentMission))
   const metrics = getMissionMetrics(currentMission)
@@ -348,17 +349,33 @@ function App() {
   return (
     <div className="app-shell">
       <div className="background-grid" />
+      <div className="background-noise" />
+      <div className="background-vignette" />
       <div className="background-glow background-glow--left" />
+      <div className="background-glow background-glow--center" />
       <div className="background-glow background-glow--right" />
+      <div className="background-orbit background-orbit--one" />
+      <div className="background-orbit background-orbit--two" />
+      <div className="background-scanline" />
 
       <header className="topbar">
         <div className="brand-lockup">
           <div className="brand-badge">
             <ShieldCheck size={18} />
           </div>
-          <div>
+          <div className="brand-copy">
             <p className="eyebrow">serious game / vulnerability management</p>
             <h1>{missionHeadline}</h1>
+            <div className="brand-subline">
+              <span>
+                <Activity size={14} />
+                command state online
+              </span>
+              <span>{selectedChapter.phase}</span>
+              <span>
+                {completedCount}/{chapters.length} phases stabilized
+              </span>
+            </div>
           </div>
         </div>
 
@@ -384,14 +401,18 @@ function App() {
       </header>
 
       <main className="stage">
+        <div className="stage-shell">
+          <div className="stage-shell__edge stage-shell__edge--left" />
+          <div className="stage-shell__edge stage-shell__edge--right" />
+          <div className="stage-shell__inner">
         <AnimatePresence mode="wait">
           {stage === 'campaign' ? (
             <motion.div
               key="campaign"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -18 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 24, scale: 0.985, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -24, scale: 0.992, filter: 'blur(8px)' }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
               <CampaignScreen chapters={chapters} onSelect={openMission} />
             </motion.div>
@@ -400,10 +421,10 @@ function App() {
           {stage === 'brief' ? (
             <motion.div
               key="brief"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -18 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 24, scale: 0.985, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -24, scale: 0.992, filter: 'blur(8px)' }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
               <BriefScreen
                 chapter={selectedChapter}
@@ -418,10 +439,10 @@ function App() {
           {stage === 'workspace' ? (
             <motion.div
               key="workspace"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -18 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 24, scale: 0.985, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -24, scale: 0.992, filter: 'blur(8px)' }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
               <WorkspaceScreen
                 activeTab={activeTab}
@@ -453,10 +474,10 @@ function App() {
           {stage === 'debrief' ? (
             <motion.div
               key="debrief"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -18 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: 24, scale: 0.985, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -24, scale: 0.992, filter: 'blur(8px)' }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
             >
               <DebriefScreen
                 nextChapter={nextChapter}
@@ -472,6 +493,8 @@ function App() {
             </motion.div>
           ) : null}
         </AnimatePresence>
+          </div>
+        </div>
       </main>
     </div>
   )

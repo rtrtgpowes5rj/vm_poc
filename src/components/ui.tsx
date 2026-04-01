@@ -1,11 +1,7 @@
+import { motion } from 'framer-motion'
 import { Check, CheckCircle2, ChevronDown } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { MissionReviewItem, ReviewStatus } from '../lib/mission'
 import {
   labelForDecision,
@@ -40,7 +36,12 @@ export function Panel({
   title: string
 }) {
   return (
-    <section className="panel">
+    <motion.section
+      className="panel"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="panel-head">
         <div className="panel-title">
           <Icon size={16} />
@@ -48,7 +49,7 @@ export function Panel({
         </div>
       </div>
       {children}
-    </section>
+    </motion.section>
   )
 }
 
@@ -63,6 +64,8 @@ export function MetricRail({
   tone: 'neutral' | 'good' | 'warning' | 'critical'
   value: string
 }) {
+  const safeProgress = Math.min(Math.max(progress, 0), 100)
+
   return (
     <div className={`metric-rail metric-rail--${tone}`}>
       <div className="metric-rail__label">
@@ -70,7 +73,11 @@ export function MetricRail({
         <strong>{value}</strong>
       </div>
       <div className="metric-rail__track">
-        <div style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
+        <motion.div
+          initial={{ width: 0, opacity: 0.65 }}
+          animate={{ width: `${safeProgress}%`, opacity: 1 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        />
       </div>
     </div>
   )
@@ -78,7 +85,11 @@ export function MetricRail({
 
 export function StakeholderCard({ stakeholder }: { stakeholder: Stakeholder }) {
   return (
-    <div className={`stakeholder-card stakeholder-card--${stakeholder.stance}`}>
+    <motion.div
+      className={`stakeholder-card stakeholder-card--${stakeholder.stance}`}
+      whileHover={{ y: -3, scale: 1.01 }}
+      transition={{ duration: 0.18 }}
+    >
       <div className="stakeholder-card__header">
         <div>
           <strong>{stakeholder.name}</strong>
@@ -88,7 +99,7 @@ export function StakeholderCard({ stakeholder }: { stakeholder: Stakeholder }) {
       </div>
       <p>{stakeholder.quote}</p>
       <small>{stakeholder.pressure}</small>
-    </div>
+    </motion.div>
   )
 }
 
@@ -98,7 +109,12 @@ export function ReviewBadge({ status }: { status: ReviewStatus }) {
 
 export function ReviewItemCard({ item }: { item: MissionReviewItem }) {
   return (
-    <div className={`review-card review-card--${item.status}`}>
+    <motion.div
+      className={`review-card review-card--${item.status}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.26 }}
+    >
       <div className="review-card__head">
         <div>
           <strong>{item.title}</strong>
@@ -112,7 +128,7 @@ export function ReviewItemCard({ item }: { item: MissionReviewItem }) {
         </div>
       </div>
       <p>{item.feedback}</p>
-    </div>
+    </motion.div>
   )
 }
 
@@ -126,13 +142,16 @@ export function ChoiceButton({
   onClick: () => void
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       className={`choice-button ${active ? 'choice-button--active' : ''}`}
       onClick={onClick}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ duration: 0.16 }}
     >
       {children}
-    </button>
+    </motion.button>
   )
 }
 
@@ -146,13 +165,16 @@ export function InlineOption({
   onClick: () => void
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       className={`inline-option ${active ? 'inline-option--active' : ''}`}
       onClick={onClick}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.985 }}
+      transition={{ duration: 0.16 }}
     >
       {children}
-    </button>
+    </motion.button>
   )
 }
 
@@ -164,13 +186,18 @@ export function CompletedObjective({
   title: string
 }) {
   return (
-    <div className="completed-objective">
+    <motion.div
+      className="completed-objective"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24 }}
+    >
       <CheckCircle2 size={16} />
       <div>
         <strong>{title}</strong>
         <p>{caption}</p>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -208,35 +235,37 @@ export function ControlSelect<T extends string>({
   const selectedOption = options.find((option) => option.value === value) ?? null
 
   return (
-    <div
-      ref={shellRef}
-      className={`control-select ${open ? 'control-select--open' : ''}`}
-    >
-      <button
+    <div ref={shellRef} className={`control-select ${open ? 'control-select--open' : ''}`}>
+      <motion.button
         type="button"
         className={`control-select__trigger ${
           selectedOption ? 'control-select__trigger--selected' : ''
         }`}
         onClick={() => setOpen((current) => !current)}
+        whileTap={{ scale: 0.99 }}
       >
         <span className="control-select__copy">
-          <span className="control-select__value">
-            {selectedOption?.label ?? placeholder}
-          </span>
+          <span className="control-select__value">{selectedOption?.label ?? placeholder}</span>
           {selectedOption?.meta ? (
             <small className="control-select__meta">{selectedOption.meta}</small>
           ) : null}
         </span>
         <ChevronDown size={16} />
-      </button>
+      </motion.button>
 
       {open ? (
-        <div className="control-select__menu">
+        <motion.div
+          className="control-select__menu"
+          initial={{ opacity: 0, y: -4, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+          transition={{ duration: 0.14 }}
+        >
           {options.map((option) => {
             const active = option.value === value
 
             return (
-              <button
+              <motion.button
                 key={option.value}
                 type="button"
                 className={`control-select__option ${
@@ -246,6 +275,8 @@ export function ControlSelect<T extends string>({
                   onChange(option.value)
                   setOpen(false)
                 }}
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.99 }}
               >
                 <span className="control-select__copy">
                   <span className="control-select__value">{option.label}</span>
@@ -254,10 +285,10 @@ export function ControlSelect<T extends string>({
                   ) : null}
                 </span>
                 {active ? <Check size={16} /> : null}
-              </button>
+              </motion.button>
             )
           })}
-        </div>
+        </motion.div>
       ) : null}
     </div>
   )

@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ArrowLeft, ArrowRight, Orbit, Radar, ShieldCheck, Users2 } from 'lucide-react'
 import type { MissionObjective } from '../lib/mission'
 import type { CampaignChapter, MissionState } from '../types'
 
@@ -31,10 +32,61 @@ export function BriefScreen({
       </div>
 
       <div className="brief-grid">
-        <section className="brief-copy">
-          <p className="eyebrow">mission briefing</p>
-          <h2>{chapter.title}</h2>
-          <p className="brief-text">{mission.narrative}</p>
+        <section className="brief-copy brief-copy--poster">
+          <div className="brief-poster">
+            <div className="brief-poster__copy">
+              <p className="eyebrow">mission briefing</p>
+              <h2>{chapter.title}</h2>
+              <p className="brief-text">{mission.narrative}</p>
+
+              <div className="brief-poster__stats">
+                <div>
+                  <span>environment</span>
+                  <strong>fintech / payments</strong>
+                </div>
+                <div>
+                  <span>phase code</span>
+                  <strong>{mission.code}</strong>
+                </div>
+                <div>
+                  <span>focus</span>
+                  <strong>method first</strong>
+                </div>
+              </div>
+            </div>
+
+            <motion.div
+              className="brief-stage"
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15, duration: 0.65 }}
+            >
+              <div className="brief-stage__orb" />
+              <div className="brief-stage__ring brief-stage__ring--one" />
+              <div className="brief-stage__ring brief-stage__ring--two" />
+              <div className="brief-stage__card brief-stage__card--top">
+                <Radar size={16} />
+                <div>
+                  <strong>Контур атаки</strong>
+                  <span>entry → key → target</span>
+                </div>
+              </div>
+              <div className="brief-stage__card brief-stage__card--mid">
+                <ShieldCheck size={16} />
+                <div>
+                  <strong>SLA и роли</strong>
+                  <span>RACI + обязательные артефакты</span>
+                </div>
+              </div>
+              <div className="brief-stage__card brief-stage__card--bottom">
+                <Orbit size={16} />
+                <div>
+                  <strong>Методика</strong>
+                  <span>не от сканера, а от риска бизнеса</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
 
           <div className="brief-block">
             <h3>Операционная среда</h3>
@@ -51,7 +103,7 @@ export function BriefScreen({
             <div className="brief-list">
               {mission.learningGoals.map((item) => (
                 <div key={item} className="brief-list__item">
-                  <strong>Цель</strong>
+                  <strong>Контрольная опора</strong>
                   <p>{item}</p>
                 </div>
               ))}
@@ -59,9 +111,12 @@ export function BriefScreen({
           </div>
         </section>
 
-        <section className="brief-aside">
+        <section className="brief-aside brief-aside--dense">
           <div className="brief-block">
-            <h3>Критерии зачёта</h3>
+            <div className="brief-section__title">
+              <Users2 size={16} />
+              <h3>Критерии зачёта</h3>
+            </div>
             {objectives.map((objective) => (
               <div key={objective.id} className="objective-row">
                 <div>
@@ -74,7 +129,10 @@ export function BriefScreen({
           </div>
 
           <div className="brief-block">
-            <h3>Типовые ошибки</h3>
+            <div className="brief-section__title">
+              <ShieldCheck size={16} />
+              <h3>Типовые ошибки</h3>
+            </div>
             <div className="brief-list">
               {mission.failureModes.map((item) => (
                 <div key={item} className="brief-list__item">
@@ -86,7 +144,10 @@ export function BriefScreen({
           </div>
 
           <div className="brief-block">
-            <h3>Ключевые участники</h3>
+            <div className="brief-section__title">
+              <Users2 size={16} />
+              <h3>Ключевые участники</h3>
+            </div>
             {mission.stakeholders.map((stakeholder) => (
               <div key={stakeholder.id} className="stakeholder-inline">
                 <strong>{stakeholder.name}</strong>
@@ -95,7 +156,7 @@ export function BriefScreen({
             ))}
           </div>
 
-          <button type="button" className="primary-button" onClick={onStart}>
+          <button type="button" className="primary-button primary-button--hero" onClick={onStart}>
             Запустить фазу
             <ArrowRight size={18} />
           </button>
