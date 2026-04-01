@@ -1,0 +1,52 @@
+{
+  "name": "vm",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "dev:web": "vite --host 0.0.0.0 --port 5173 --strictPort",
+    "dev:public": "powershell -ExecutionPolicy Bypass -File scripts/start-public-dev.ps1",
+    "dev:public:stop": "powershell -ExecutionPolicy Bypass -File scripts/stop-public-dev.ps1",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "share:web": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "share:tunnel": "powershell -ExecutionPolicy Bypass -File scripts/run-localhost-run.ps1",
+    "share": "powershell -ExecutionPolicy Bypass -File scripts/start-share.ps1",
+    "share:url": "powershell -ExecutionPolicy Bypass -File scripts/print-share-url.ps1",
+    "share:stop": "powershell -ExecutionPolicy Bypass -File scripts/stop-share.ps1",
+    "test": "vitest run",
+    "tunnel": "ngrok http 127.0.0.1:5173",
+    "tunnel:url": "powershell -ExecutionPolicy Bypass -File scripts/print-ngrok-url.ps1",
+    "tunnel:lt": "lt --port 5173 --local-host 127.0.0.1",
+    "tunnel:cf": "powershell -ExecutionPolicy Bypass -File scripts/run-cloudflare-tunnel.ps1"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/space-grotesk": "^5.2.10",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^14.3.1",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.9.0",
+    "jsdom": "^24.1.0",
+    "localtunnel": "^2.0.2",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.4.1",
+    "vitest": "^1.6.0"
+  }
+}
