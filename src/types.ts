@@ -147,7 +147,27 @@ export interface PrioritizationCase extends Hintable {
   correctDecision: PriorityDecision
   selectedFactors: PriorityFactor[]
   requiredFactors: PriorityFactor[]
+  allowedFactors?: PriorityFactor[]
   explanation: string
+}
+
+export interface PrioritizationWaveOption {
+  id: string
+  title: string
+  cue: string
+}
+
+export interface PrioritizationWaveTask extends Hintable {
+  id: string
+  section: 'queue'
+  title: string
+  prompt: string
+  importance: Importance
+  explanation: string
+  selectionLimit: number
+  options: PrioritizationWaveOption[]
+  correctOptionIds: string[]
+  selectedOptionIds: string[]
 }
 
 export interface PrioritizationRankingEntry {
@@ -182,7 +202,27 @@ export interface ResponseCase extends Hintable {
   correctWindow: ChangeWindow
   selectedVerification: VerificationStep[]
   requiredVerification: VerificationStep[]
+  allowedVerification?: VerificationStep[]
   explanation: string
+}
+
+export interface ResponseSequenceEntry {
+  id: string
+  title: string
+  cue: string
+}
+
+export interface ResponseSequenceTask extends Hintable {
+  id: string
+  section: 'playbook'
+  title: string
+  prompt: string
+  importance: Importance
+  explanation: string
+  entries: ResponseSequenceEntry[]
+  correctOrderIds: string[]
+  selectedOrderIds: string[]
+  touched: boolean
 }
 
 export interface MissionBlueprint {
@@ -203,7 +243,9 @@ export interface MissionBlueprint {
   inventoryAssets?: InventoryAsset[]
   prioritizationCases?: PrioritizationCase[]
   prioritizationRankingTasks?: PrioritizationRankingTask[]
+  prioritizationWaveTasks?: PrioritizationWaveTask[]
   responseCases?: ResponseCase[]
+  responseSequenceTasks?: ResponseSequenceTask[]
 }
 
 export interface MissionState extends MissionBlueprint {}

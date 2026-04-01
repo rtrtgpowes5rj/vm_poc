@@ -576,6 +576,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctDecision: 'urgent',
         selectedFactors: [],
         requiredFactors: ['accessibility', 'exploit', 'trend', 'asset-criticality'],
+        allowedFactors: ['accessibility', 'exploit', 'trend', 'asset-criticality', 'impact'],
         explanation:
           'Периметр + публичный эксплойт + трендовость = внеочередная обработка. Это не тот кейс, который ждёт стандартного окна.',
       },
@@ -596,6 +597,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctDecision: 'urgent',
         selectedFactors: [],
         requiredFactors: ['impact', 'asset-criticality', 'accessibility', 'exploit'],
+        allowedFactors: ['impact', 'asset-criticality', 'accessibility', 'exploit', 'trend'],
         explanation:
           'Даже если это misconfig, а не классическая CVE, последствия и доступность для внешнего нарушителя делают кейс срочным.',
       },
@@ -616,6 +618,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctDecision: 'urgent',
         selectedFactors: [],
         requiredFactors: ['asset-criticality', 'impact'],
+        allowedFactors: ['asset-criticality', 'impact'],
         explanation:
           'Средний CVSS не отменяет того, что речь идёт о ключевой системе, которая может радикально упростить путь к недопустимому событию.',
       },
@@ -636,6 +639,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctDecision: 'planned',
         selectedFactors: [],
         requiredFactors: ['impact', 'asset-criticality'],
+        allowedFactors: ['impact', 'asset-criticality'],
         explanation:
           'Система значимая, но без внешней доступности и подтверждённой активной эксплуатации кейс идёт в плановую очередь через контролируемое обновление.',
       },
@@ -656,6 +660,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctDecision: 'compensating',
         selectedFactors: [],
         requiredFactors: ['impact', 'asset-criticality'],
+        allowedFactors: ['impact', 'asset-criticality'],
         explanation:
           'Если патча нет и обновление сейчас невозможно, корректная приоритизация ведёт к компенсирующим мерам, а не к формальной просрочке SLA.',
       },
@@ -676,6 +681,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctDecision: 'planned',
         selectedFactors: [],
         requiredFactors: ['impact'],
+        allowedFactors: ['impact', 'exploit'],
         explanation:
           'Наличие технической проблемы и даже PoC не всегда означает аварийную очередь, если контекст актива и доступность существенно ограничены.',
       },
@@ -696,8 +702,48 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctDecision: 'accepted',
         selectedFactors: [],
         requiredFactors: ['impact'],
+        allowedFactors: ['impact'],
         explanation:
           'Принятие риска допустимо только там, где оно обосновано контекстом актива и низким влиянием на недопустимые события.',
+      },
+    ],
+    prioritizationWaveTasks: [
+      {
+        id: 'prio-hot-window',
+        section: 'queue',
+        title: 'Аварийное окно ограничено двумя слотами',
+        prompt:
+          'У команды есть только два слота на внеочередное устранение сегодня. Выберите кейсы, которые действительно должны попасть в emergency-wave.',
+        importance: 'critical',
+        hint:
+          'В ограниченный emergency-slot попадают не самые “громкие” уязвимости, а те, что быстрее других ведут к недопустимому событию и уже готовы к эксплуатации.',
+        explanation:
+          'При дефиците ресурса в первую волну должны попасть internet-facing и целевые кейсы с прямым бизнес-эффектом. Внутренние и плановые кейсы не должны вытеснять их только из-за удобства исполнения.',
+        selectionLimit: 2,
+        options: [
+          {
+            id: 'wave-vpn',
+            title: 'RCE в VPN-шлюзе на периметре',
+            cue: 'активная эксплуатация, internet-facing, кратчайший путь в инфраструктуру',
+          },
+          {
+            id: 'wave-pay',
+            title: 'Дефолтные учётные данные в web-admin платёжного сервиса',
+            cue: 'целевая система, внешний доступ, прямой путь к бизнес-ущербу',
+          },
+          {
+            id: 'wave-dc',
+            title: 'SMB signing отключён на контроллере домена',
+            cue: 'критичный внутренний кейс, но без признаков активной эксплуатации извне',
+          },
+          {
+            id: 'wave-legacy',
+            title: 'Устаревший TLS-стек в legacy backup agent',
+            cue: 'патча нет, нужен компенсирующий трек, а не emergency-slot',
+          },
+        ],
+        correctOptionIds: ['wave-vpn', 'wave-pay'],
+        selectedOptionIds: [],
       },
     ],
     prioritizationRankingTasks: [
@@ -850,6 +896,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctWindow: 'emergency',
         selectedVerification: [],
         requiredVerification: ['rescan', 'monitoring'],
+        allowedVerification: ['rescan', 'monitoring'],
         explanation:
           'Здесь нужен не плановый backlog, а аварийный патч с немедленной перепроверкой и усиленным наблюдением на случай неуспешного обновления.',
       },
@@ -867,6 +914,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctWindow: 'emergency',
         selectedVerification: [],
         requiredVerification: ['rescan'],
+        allowedVerification: ['rescan', 'owner-sync'],
         explanation:
           'Для misconfig корректный путь — исправление конфигурации, а не бессмысленный поиск патча. Из-за критичности системы это делается вне очереди.',
       },
@@ -884,6 +932,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctWindow: 'emergency',
         selectedVerification: [],
         requiredVerification: ['monitoring', 'owner-sync'],
+        allowedVerification: ['monitoring', 'owner-sync', 'rescan'],
         explanation:
           'Когда патча нет, правильная реакция — компенсирующая защита в аварийном порядке: WAF, ограничения доступа, усиленный мониторинг и синхронизация с владельцем сервиса.',
       },
@@ -901,6 +950,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctWindow: 'exception',
         selectedVerification: [],
         requiredVerification: ['monitoring', 'owner-sync'],
+        allowedVerification: ['monitoring', 'owner-sync'],
         explanation:
           'Для legacy без патча нужен управляемый режим исключения: компенсирующие меры, усиленный мониторинг и прозрачное согласование с владельцем актива.',
       },
@@ -918,6 +968,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctWindow: 'planned',
         selectedVerification: [],
         requiredVerification: ['rescan'],
+        allowedVerification: ['rescan', 'owner-sync'],
         explanation:
           'Это не zero-day на периметре, но и не кейс для игнорирования. Корректно — внести конфигурационное изменение в ближайшее плановое окно и перепроверить результат.',
       },
@@ -935,8 +986,105 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         correctWindow: 'planned',
         selectedVerification: [],
         requiredVerification: ['rescan', 'sla-review'],
+        allowedVerification: ['rescan', 'sla-review', 'owner-sync'],
         explanation:
           'Если сроки системно не выполняются, процесс требует не только доработать патчинг, но и формально пересмотреть SLA на основе реального опыта.',
+      },
+    ],
+    responseSequenceTasks: [
+      {
+        id: 'resp-zero-day-playbook',
+        section: 'playbook',
+        title: 'Playbook для zero-day без патча',
+        prompt:
+          'Соберите реалистичную последовательность действий для internet-facing zero-day, по которому патч ещё недоступен.',
+        importance: 'critical',
+        hint:
+          'Сначала нужно зафиксировать владельца и затронутый контур, затем быстро ввести временную защиту, после чего усилить наблюдение и формально удержать кейс в управляемом процессе.',
+        explanation:
+          'Для zero-day без патча корректный playbook строится вокруг быстрого компенсирующего барьера, коммуникации с владельцем сервиса и последующего усиленного контроля, а не вокруг ожидания “когда выйдет обновление”.',
+        entries: [
+          {
+            id: 'resp-zero-owner',
+            title: 'Подтвердить затронутый сервис и владельца актива',
+            cue: 'без этого аварийные меры и риск-коммуникация будут неуправляемыми',
+          },
+          {
+            id: 'resp-zero-waf',
+            title: 'Ввести временную защиту: WAF/ограничение доступа',
+            cue: 'нужно быстро уменьшить поверхность атаки, не дожидаясь патча',
+          },
+          {
+            id: 'resp-zero-monitor',
+            title: 'Включить усиленный мониторинг и отслеживание обходов',
+            cue: 'после временной защиты нужен контроль результата и признаков эксплуатации',
+          },
+          {
+            id: 'resp-zero-exception',
+            title: 'Зафиксировать режим исключения и дальнейший план пересмотра',
+            cue: 'процесс должен сохранить SLA-контекст и формальные обязательства',
+          },
+        ],
+        correctOrderIds: [
+          'resp-zero-owner',
+          'resp-zero-waf',
+          'resp-zero-monitor',
+          'resp-zero-exception',
+        ],
+        selectedOrderIds: [
+          'resp-zero-monitor',
+          'resp-zero-exception',
+          'resp-zero-waf',
+          'resp-zero-owner',
+        ],
+        touched: false,
+      },
+      {
+        id: 'resp-sla-playbook',
+        section: 'playbook',
+        title: 'Playbook пересмотра SLA после системного срыва',
+        prompt:
+          'Расположите шаги так, как должен выглядеть пересмотр SLA, если команда ИТ повторно срывает согласованный срок.',
+        importance: 'important',
+        hint:
+          'Пересмотр SLA начинается не с новой цифры в таблице, а с разбора причин, проверки окна и тестирования, затем оформляется новое обязательство и контроль его выполнения.',
+        explanation:
+          'Корректный пересмотр SLA опирается на опыт реального исполнения: сначала разбор причин, затем согласование нового срока с ИТ и владельцем сервиса, после чего обновлённый срок должен вернуться в цикл контроля.',
+        entries: [
+          {
+            id: 'resp-sla-rootcause',
+            title: 'Разобрать причину срыва с ИТ и владельцем сервиса',
+            cue: 'нужно понять, что именно делало срок невыполнимым',
+          },
+          {
+            id: 'resp-sla-window',
+            title: 'Переоценить окно изменений, тестирование и ограничения доступности',
+            cue: 'новый SLA должен опираться на реальную операционную модель',
+          },
+          {
+            id: 'resp-sla-approve',
+            title: 'Зафиксировать и согласовать новый SLA',
+            cue: 'обязательство должно быть формальным и прозрачным для всех сторон',
+          },
+          {
+            id: 'resp-sla-control',
+            title: 'Вернуть кейс в цикл контроля и повторной проверки',
+            cue: 'после пересмотра срок снова должен измеряться и проверяться',
+          },
+        ],
+        correctOrderIds: [
+          'resp-sla-rootcause',
+          'resp-sla-window',
+          'resp-sla-approve',
+          'resp-sla-control',
+        ],
+        selectedOrderIds: [
+          'resp-sla-approve',
+          'resp-sla-rootcause',
+          'resp-sla-control',
+          'resp-sla-window',
+        ],
+        touched: false,
       },
     ],
   },

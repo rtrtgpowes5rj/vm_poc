@@ -88,6 +88,7 @@ function cloneBlueprint(blueprint: MissionBlueprint): MissionState {
       ...item,
       selectedFactors: [...item.selectedFactors],
       requiredFactors: [...item.requiredFactors],
+      allowedFactors: item.allowedFactors ? [...item.allowedFactors] : undefined,
     })),
     prioritizationRankingTasks: blueprint.prioritizationRankingTasks?.map((task) => ({
       ...task,
@@ -95,10 +96,23 @@ function cloneBlueprint(blueprint: MissionBlueprint): MissionState {
       correctOrderIds: [...task.correctOrderIds],
       selectedOrderIds: [...task.selectedOrderIds],
     })),
+    prioritizationWaveTasks: blueprint.prioritizationWaveTasks?.map((task) => ({
+      ...task,
+      options: task.options.map((option) => ({ ...option })),
+      correctOptionIds: [...task.correctOptionIds],
+      selectedOptionIds: [...task.selectedOptionIds],
+    })),
     responseCases: blueprint.responseCases?.map((item) => ({
       ...item,
       selectedVerification: [...item.selectedVerification],
       requiredVerification: [...item.requiredVerification],
+      allowedVerification: item.allowedVerification ? [...item.allowedVerification] : undefined,
+    })),
+    responseSequenceTasks: blueprint.responseSequenceTasks?.map((task) => ({
+      ...task,
+      entries: task.entries.map((entry) => ({ ...entry })),
+      correctOrderIds: [...task.correctOrderIds],
+      selectedOrderIds: [...task.selectedOrderIds],
     })),
   }
 }

@@ -136,18 +136,21 @@ export function ReviewItemCard({ item }: { item: MissionReviewItem }) {
 export function ChoiceButton({
   active,
   children,
+  disabled = false,
   onClick,
 }: {
   active: boolean
   children: ReactNode
+  disabled?: boolean
   onClick: () => void
 }) {
   return (
     <motion.button
       type="button"
       className={`choice-button ${active ? 'choice-button--active' : ''}`}
+      disabled={disabled}
       onClick={onClick}
-      whileHover={{ y: -2 }}
+      whileHover={disabled ? undefined : { y: -2 }}
       whileTap={{ scale: 0.985 }}
       transition={{ duration: 0.16 }}
     >

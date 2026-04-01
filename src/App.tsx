@@ -273,6 +273,30 @@ function App() {
     }))
   }
 
+  const togglePriorityWaveOption = (taskId: string, optionId: string) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      prioritizationWaveTasks: mission.prioritizationWaveTasks?.map((task) => {
+        if (task.id !== taskId) {
+          return task
+        }
+
+        const isSelected = task.selectedOptionIds.includes(optionId)
+
+        if (!isSelected && task.selectedOptionIds.length >= task.selectionLimit) {
+          return task
+        }
+
+        return {
+          ...task,
+          selectedOptionIds: isSelected
+            ? task.selectedOptionIds.filter((current) => current !== optionId)
+            : [...task.selectedOptionIds, optionId],
+        }
+      }),
+    }))
+  }
+
   const setPriorityDecision = (caseId: string, decision: PriorityDecision) => {
     updateMission(selectedMissionId, (mission) => ({
       ...mission,
@@ -335,6 +359,43 @@ function App() {
           selectedVerification: exists
             ? item.selectedVerification.filter((current) => current !== step)
             : [...item.selectedVerification, step],
+        }
+      }),
+    }))
+  }
+
+  const moveResponseSequenceEntry = (
+    taskId: string,
+    entryId: string,
+    move: RankingMove,
+  ) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      responseSequenceTasks: mission.responseSequenceTasks?.map((task) => {
+        if (task.id !== taskId) {
+          return task
+        }
+
+        const currentIndex = task.selectedOrderIds.indexOf(entryId)
+
+        if (currentIndex === -1) {
+          return task
+        }
+
+        const targetIndex = move === 'up' ? currentIndex - 1 : currentIndex + 1
+
+        if (targetIndex < 0 || targetIndex >= task.selectedOrderIds.length) {
+          return task
+        }
+
+        const nextOrder = [...task.selectedOrderIds]
+        const [moved] = nextOrder.splice(currentIndex, 1)
+        nextOrder.splice(targetIndex, 0, moved)
+
+        return {
+          ...task,
+          touched: true,
+          selectedOrderIds: nextOrder,
         }
       }),
     }))
@@ -463,8 +524,10 @@ function App() {
                 onSetInventoryScanStrategy={setInventoryScanStrategy}
                 onSetInventorySla={setInventorySla}
                 onMovePriorityRankingEntry={movePriorityRankingEntry}
+                onTogglePriorityWaveOption={togglePriorityWaveOption}
                 onSetPriorityDecision={setPriorityDecision}
                 onTogglePriorityFactor={togglePriorityFactor}
+                onMoveResponseSequenceEntry={moveResponseSequenceEntry}
                 onSetResponseMethod={setResponseMethod}
                 onSetResponseWindow={setResponseWindow}
                 onToggleResponseVerification={toggleResponseVerification}

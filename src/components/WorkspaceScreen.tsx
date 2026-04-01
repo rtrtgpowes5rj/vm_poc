@@ -13,6 +13,14 @@ import {
   Sparkles,
   Wrench,
 } from 'lucide-react'
+import {
+  getInventoryModeStatus,
+  getPrioritizationModeStatus,
+  getPrioritizationRankingTaskStatus,
+  getPrioritizationWaveTaskStatus,
+  getResponseModeStatus,
+  getResponseSequenceTaskStatus,
+} from '../lib/mission'
 import type { MissionMetrics, MissionObjective, MissionReviewItem } from '../lib/mission'
 import { createHintToken } from '../lib/hints'
 import type {
@@ -28,6 +36,7 @@ import type {
   PrioritizationCase,
   RankingMove,
   ResponseCase,
+  ResponseSequenceTask,
   ScanStrategy,
   SlaTier,
   TaskMethod,
@@ -85,8 +94,10 @@ export function WorkspaceScreen({
   onSetInventoryScanStrategy,
   onSetInventorySla,
   onMovePriorityRankingEntry,
+  onTogglePriorityWaveOption,
   onSetPriorityDecision,
   onTogglePriorityFactor,
+  onMoveResponseSequenceEntry,
   onSetResponseMethod,
   onSetResponseWindow,
   onToggleResponseVerification,
@@ -108,8 +119,10 @@ export function WorkspaceScreen({
   onSetInventoryScanStrategy: (assetId: string, strategy: ScanStrategy) => void
   onSetInventorySla: (assetId: string, sla: SlaTier) => void
   onMovePriorityRankingEntry: (taskId: string, entryId: string, move: RankingMove) => void
+  onTogglePriorityWaveOption: (taskId: string, optionId: string) => void
   onSetPriorityDecision: (caseId: string, decision: PriorityDecision) => void
   onTogglePriorityFactor: (caseId: string, factor: PriorityFactor) => void
+  onMoveResponseSequenceEntry: (taskId: string, entryId: string, move: RankingMove) => void
   onSetResponseMethod: (caseId: string, method: TaskMethod) => void
   onSetResponseWindow: (caseId: string, window: ChangeWindow) => void
   onToggleResponseVerification: (caseId: string, step: VerificationStep) => void
@@ -233,7 +246,6 @@ export function WorkspaceScreen({
               assets={mission.inventoryAssets ?? []}
               hintBankRemaining={hintBankRemaining}
               mode="classification"
-              reviewMap={reviewMap}
               onRevealHint={onRevealHint}
               onSetInventoryRole={onSetInventoryRole}
               onSetInventoryScanStrategy={onSetInventoryScanStrategy}
@@ -246,7 +258,6 @@ export function WorkspaceScreen({
               assets={mission.inventoryAssets ?? []}
               hintBankRemaining={hintBankRemaining}
               mode="scan"
-              reviewMap={reviewMap}
               onRevealHint={onRevealHint}
               onSetInventoryRole={onSetInventoryRole}
               onSetInventoryScanStrategy={onSetInventoryScanStrategy}
@@ -259,8 +270,8 @@ export function WorkspaceScreen({
               hintBankRemaining={hintBankRemaining}
               mission={mission}
               mode="queue"
-              reviewMap={reviewMap}
               onMovePriorityRankingEntry={onMovePriorityRankingEntry}
+              onTogglePriorityWaveOption={onTogglePriorityWaveOption}
               onRevealHint={onRevealHint}
               onSetPriorityDecision={onSetPriorityDecision}
               onTogglePriorityFactor={onTogglePriorityFactor}
@@ -272,8 +283,8 @@ export function WorkspaceScreen({
               hintBankRemaining={hintBankRemaining}
               mission={mission}
               mode="factors"
-              reviewMap={reviewMap}
               onMovePriorityRankingEntry={onMovePriorityRankingEntry}
+              onTogglePriorityWaveOption={onTogglePriorityWaveOption}
               onRevealHint={onRevealHint}
               onSetPriorityDecision={onSetPriorityDecision}
               onTogglePriorityFactor={onTogglePriorityFactor}
@@ -285,7 +296,6 @@ export function WorkspaceScreen({
               cases={mission.responseCases ?? []}
               hintBankRemaining={hintBankRemaining}
               mode="planning"
-              reviewMap={reviewMap}
               onRevealHint={onRevealHint}
               onSetResponseMethod={onSetResponseMethod}
               onSetResponseWindow={onSetResponseWindow}
@@ -298,11 +308,19 @@ export function WorkspaceScreen({
               cases={mission.responseCases ?? []}
               hintBankRemaining={hintBankRemaining}
               mode="control"
-              reviewMap={reviewMap}
               onRevealHint={onRevealHint}
               onSetResponseMethod={onSetResponseMethod}
               onSetResponseWindow={onSetResponseWindow}
               onToggleResponseVerification={onToggleResponseVerification}
+            />
+          ) : null}
+
+          {mission.kind === 'response' && activeTab === 'playbook' ? (
+            <ResponsePlaybookSection
+              hintBankRemaining={hintBankRemaining}
+              tasks={mission.responseSequenceTasks ?? []}
+              onMoveResponseSequenceEntry={onMoveResponseSequenceEntry}
+              onRevealHint={onRevealHint}
             />
           ) : null}
 
@@ -489,7 +507,6 @@ function InventorySection({
   assets,
   hintBankRemaining,
   mode,
-  reviewMap,
   onRevealHint,
   onSetInventoryRole,
   onSetInventoryScanStrategy,
@@ -498,7 +515,6 @@ function InventorySection({
   assets: InventoryAsset[]
   hintBankRemaining: number
   mode: 'classification' | 'scan'
-  reviewMap: Map<string, MissionReviewItem>
   onRevealHint: (itemId: string) => void
   onSetInventoryRole: (assetId: string, role: AssetRole) => void
   onSetInventoryScanStrategy: (assetId: string, strategy: ScanStrategy) => void
@@ -511,7 +527,7 @@ function InventorySection({
     >
       <div className="scenario-list">
         {assets.map((asset) => {
-          const reviewItem = reviewMap.get(asset.id)
+          const status = getInventoryModeStatus(asset, mode)
 
           return (
             <div key={asset.id} className="scenario-card">
@@ -520,7 +536,7 @@ function InventorySection({
                   <strong>{asset.name}</strong>
                   <p>{asset.description}</p>
                 </div>
-                {reviewItem ? <ReviewBadge status={reviewItem.status} /> : null}
+                <ReviewBadge status={status} />
               </div>
 
               <div className="scenario-meta">
@@ -615,8 +631,8 @@ function PrioritizationSection({
   hintBankRemaining,
   mission,
   mode,
-  reviewMap,
   onMovePriorityRankingEntry,
+  onTogglePriorityWaveOption,
   onRevealHint,
   onSetPriorityDecision,
   onTogglePriorityFactor,
@@ -624,13 +640,14 @@ function PrioritizationSection({
   hintBankRemaining: number
   mission: MissionState
   mode: 'queue' | 'factors'
-  reviewMap: Map<string, MissionReviewItem>
   onMovePriorityRankingEntry: (taskId: string, entryId: string, move: RankingMove) => void
+  onTogglePriorityWaveOption: (taskId: string, optionId: string) => void
   onRevealHint: (itemId: string) => void
   onSetPriorityDecision: (caseId: string, decision: PriorityDecision) => void
   onTogglePriorityFactor: (caseId: string, factor: PriorityFactor) => void
 }) {
   const cases = mission.prioritizationCases ?? []
+  const waveTasks = (mission.prioritizationWaveTasks ?? []).filter((task) => task.section === mode)
   const rankingTasks = (mission.prioritizationRankingTasks ?? []).filter(
     (task) => task.section === mode,
   )
@@ -641,8 +658,55 @@ function PrioritizationSection({
       icon={Radar}
     >
       <div className="scenario-list">
+        {waveTasks.map((task) => {
+          const status = getPrioritizationWaveTaskStatus(task)
+          const selectedCount = task.selectedOptionIds.length
+
+          return (
+            <div key={task.id} className="scenario-card">
+              <div className="scenario-card__head">
+                <div>
+                  <strong>{task.title}</strong>
+                  <p>{task.prompt}</p>
+                </div>
+                <ReviewBadge status={status} />
+              </div>
+
+              <div className="choice-grid">
+                {task.options.map((option) => {
+                  const active = task.selectedOptionIds.includes(option.id)
+                  const limitReached = selectedCount >= task.selectionLimit && !active
+
+                  return (
+                    <ChoiceButton
+                      key={option.id}
+                      active={active}
+                      disabled={limitReached}
+                      onClick={() => onTogglePriorityWaveOption(task.id, option.id)}
+                    >
+                      <span className="choice-button__stack">
+                        <strong>{option.title}</strong>
+                        <small>{option.cue}</small>
+                      </span>
+                    </ChoiceButton>
+                  )
+                })}
+              </div>
+
+              <ScenarioFooter
+                hintBankRemaining={hintBankRemaining}
+                hintText={task.hint ?? getWaveHint()}
+                hintUsed={task.hintUsed}
+                hintToken={createHintToken('prioritizationWaveTasks', task.id)}
+                onRevealHint={onRevealHint}
+                selectionLabel={`${selectedCount}/${task.selectionLimit} emergency-слотов занято`}
+              />
+            </div>
+          )
+        })}
+
         {rankingTasks.map((task) => {
-          const reviewItem = reviewMap.get(task.id)
+          const status = getPrioritizationRankingTaskStatus(task)
 
           return (
             <div key={task.id} className="scenario-card scenario-card--priority">
@@ -651,7 +715,7 @@ function PrioritizationSection({
                   <strong>{task.title}</strong>
                   <p>{task.prompt}</p>
                 </div>
-                {reviewItem ? <ReviewBadge status={reviewItem.status} /> : null}
+                <ReviewBadge status={status} />
               </div>
 
               <div className="ranking-list">
@@ -709,7 +773,7 @@ function PrioritizationSection({
         })}
 
         {cases.map((item) => {
-          const reviewItem = reviewMap.get(item.id)
+          const status = getPrioritizationModeStatus(item, mode)
 
           return (
             <div key={item.id} className="scenario-card">
@@ -718,7 +782,7 @@ function PrioritizationSection({
                   <strong>{item.title}</strong>
                   <p>{item.summary}</p>
                 </div>
-                {reviewItem ? <ReviewBadge status={reviewItem.status} /> : null}
+                <ReviewBadge status={status} />
               </div>
 
               <div className="scenario-meta">
@@ -786,7 +850,6 @@ function ResponseSection({
   cases,
   hintBankRemaining,
   mode,
-  reviewMap,
   onRevealHint,
   onSetResponseMethod,
   onSetResponseWindow,
@@ -795,7 +858,6 @@ function ResponseSection({
   cases: ResponseCase[]
   hintBankRemaining: number
   mode: 'planning' | 'control'
-  reviewMap: Map<string, MissionReviewItem>
   onRevealHint: (itemId: string) => void
   onSetResponseMethod: (caseId: string, method: TaskMethod) => void
   onSetResponseWindow: (caseId: string, window: ChangeWindow) => void
@@ -805,7 +867,7 @@ function ResponseSection({
     <Panel title={mode === 'planning' ? 'План устранения' : 'Контроль устранения'} icon={Wrench}>
       <div className="scenario-list">
         {cases.map((item) => {
-          const reviewItem = reviewMap.get(item.id)
+          const status = getResponseModeStatus(item, mode)
 
           return (
             <div key={item.id} className="scenario-card">
@@ -814,7 +876,7 @@ function ResponseSection({
                   <strong>{item.title}</strong>
                   <p>{item.summary}</p>
                 </div>
-                {reviewItem ? <ReviewBadge status={reviewItem.status} /> : null}
+                <ReviewBadge status={status} />
               </div>
 
               <div className="scenario-meta">
@@ -886,6 +948,87 @@ function ResponseSection({
                       }`
                     : `Шагов контроля выбрано: ${item.selectedVerification.length}`
                 }
+              />
+            </div>
+          )
+        })}
+      </div>
+    </Panel>
+  )
+}
+
+function ResponsePlaybookSection({
+  hintBankRemaining,
+  tasks,
+  onMoveResponseSequenceEntry,
+  onRevealHint,
+}: {
+  hintBankRemaining: number
+  tasks: ResponseSequenceTask[]
+  onMoveResponseSequenceEntry: (taskId: string, entryId: string, move: RankingMove) => void
+  onRevealHint: (itemId: string) => void
+}) {
+  return (
+    <Panel title="Плейбуки и эскалации" icon={Wrench}>
+      <div className="scenario-list">
+        {tasks.map((task) => {
+          const status = getResponseSequenceTaskStatus(task)
+
+          return (
+            <div key={task.id} className="scenario-card scenario-card--priority">
+              <div className="scenario-card__head">
+                <div>
+                  <strong>{task.title}</strong>
+                  <p>{task.prompt}</p>
+                </div>
+                <ReviewBadge status={status} />
+              </div>
+
+              <div className="ranking-list">
+                {task.selectedOrderIds.map((entryId, index) => {
+                  const entry = task.entries.find((item) => item.id === entryId)
+
+                  if (!entry) {
+                    return null
+                  }
+
+                  return (
+                    <div key={entry.id} className="ranking-card">
+                      <div className="ranking-card__order">{index + 1}</div>
+                      <div className="ranking-card__copy">
+                        <strong>{entry.title}</strong>
+                        <p>{entry.cue}</p>
+                      </div>
+                      <div className="ranking-card__actions">
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={() => onMoveResponseSequenceEntry(task.id, entry.id, 'up')}
+                          disabled={index === 0}
+                        >
+                          <ArrowUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={() => onMoveResponseSequenceEntry(task.id, entry.id, 'down')}
+                          disabled={index === task.selectedOrderIds.length - 1}
+                        >
+                          <ArrowDown size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <ScenarioFooter
+                hintBankRemaining={hintBankRemaining}
+                hintText={task.hint ?? getResponsePlaybookHint(task.id)}
+                hintUsed={task.hintUsed}
+                hintToken={createHintToken('responseSequenceTasks', task.id)}
+                onRevealHint={onRevealHint}
+                selectionLabel={task.touched ? 'Плейбук перестроен' : 'Ожидается корректная последовательность'}
               />
             </div>
           )
@@ -1068,12 +1211,24 @@ function getRankingHint() {
   return 'Верх списка занимают кейсы, которые быстрее всего приводят к недопустимому событию: периметр, активная эксплуатация, прямой путь к целевой системе.'
 }
 
+function getWaveHint() {
+  return 'Аварийный слот всегда ограничен. Туда попадают только кейсы, которые уже сейчас дают внешнему нарушителю кратчайший путь к недопустимому событию.'
+}
+
 function getResponseHint(item: ResponseCase) {
   if (item.title.toLowerCase().includes('zero-day')) {
     return 'Когда патча ещё нет, корректная реакция обычно лежит в зоне временной защиты, ограничений доступа и усиленного мониторинга.'
   }
 
   return 'Способ обработки должен соответствовать природе кейса: misconfig лечится не патчем, а legacy без патча не притворяется обычным SLA.'
+}
+
+function getResponsePlaybookHint(taskId: string) {
+  if (taskId === 'resp-zero-day-playbook') {
+    return 'Zero-day без патча не начинается с ожидания обновления. Сначала фиксируем контур и владельца, затем быстро ставим временную защиту и только потом удерживаем кейс в контроле.'
+  }
+
+  return 'Пересмотр SLA начинается с анализа причины срыва и операционных ограничений, а не с косметической смены цифры в таблице.'
 }
 
 function getTabsForMission(mission: MissionState) {
@@ -1104,6 +1259,7 @@ function getTabsForMission(mission: MissionState) {
   return [
     { id: 'planning', label: 'План', icon: Wrench },
     { id: 'control', label: 'Контроль', icon: BellRing },
+    { id: 'playbook', label: 'Плейбук', icon: Network },
     { id: 'review', label: 'Разбор', icon: ShieldAlert },
   ]
 }

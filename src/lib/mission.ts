@@ -5,7 +5,9 @@ import type {
   MissionState,
   PrioritizationCase,
   PrioritizationRankingTask,
+  PrioritizationWaveTask,
   ResponseCase,
+  ResponseSequenceTask,
 } from '../types'
 
 export type ReviewStatus = 'correct' | 'partial' | 'wrong' | 'unanswered'
@@ -155,25 +157,31 @@ export function getMissionObjectives(mission: MissionState): MissionObjective[] 
   if (mission.kind === 'prioritization') {
     const cases = mission.prioritizationCases ?? []
     const rankingTasks = mission.prioritizationRankingTasks ?? []
+    const waveTasks = mission.prioritizationWaveTasks ?? []
     const criticalCases = cases.filter((item) => item.importance === 'critical')
     const criticalClosed = criticalCases.filter(
       (item) => evaluatePrioritizationCase(item).status === 'correct',
     ).length
     const factorClosed = cases.filter((item) =>
-      hasExactSet(item.selectedFactors, item.requiredFactors),
+      hasAcceptableFactorSelection(item),
     ).length
     const rankingClosed = rankingTasks.filter(
       (task) => evaluatePrioritizationRankingTask(task).status === 'correct',
+    ).length
+    const waveClosed = waveTasks.filter(
+      (task) => evaluatePrioritizationWaveTask(task).status === 'correct',
     ).length
 
     return [
       {
         id: 'prio-rank',
-        title: 'Собрать первую волну обработки в корректном порядке',
+        title: 'Собрать первую волну и не переполнить аварийный слот',
         caption:
-          'Кейс на периметре с эксплуатацией и кейс на целевой системе не должны тонуть в общей массе backlog.',
-        progressLabel: `${rankingClosed}/${rankingTasks.length || 1}`,
-        complete: rankingTasks.length === 0 || rankingClosed === rankingTasks.length,
+          'Даже при ограниченном ресурсе в emergency-wave должны попасть именно те кейсы, которые быстрее других ведут к недопустимому событию.',
+        progressLabel: `${rankingClosed + waveClosed}/${rankingTasks.length + waveTasks.length || 1}`,
+        complete:
+          (rankingTasks.length === 0 || rankingClosed === rankingTasks.length) &&
+          (waveTasks.length === 0 || waveClosed === waveTasks.length),
       },
       {
         id: 'prio-critical',
@@ -203,12 +211,20 @@ export function getMissionObjectives(mission: MissionState): MissionObjective[] 
   }
 
   const cases = mission.responseCases ?? []
+  const sequenceTasks = mission.responseSequenceTasks ?? []
   const criticalCases = cases.filter((item) => item.importance === 'critical')
   const criticalClosed = criticalCases.filter(
     (item) => evaluateResponseCase(item).status === 'correct',
   ).length
   const controlClosed = cases.filter((item) =>
-    hasExactSet(item.selectedVerification, item.requiredVerification),
+    hasAcceptableSet(
+      item.selectedVerification,
+      item.requiredVerification,
+      item.allowedVerification,
+    ),
+  ).length
+  const playbookClosed = sequenceTasks.filter(
+    (task) => evaluateResponseSequenceTask(task).status === 'correct',
   ).length
 
   return [
@@ -227,6 +243,14 @@ export function getMissionObjectives(mission: MissionState): MissionObjective[] 
         'Повторное сканирование, мониторинг и пересмотр SLA — обязательная часть жизненного цикла, а не постскриптум.',
       progressLabel: `${controlClosed}/${cases.length}`,
       complete: controlClosed === cases.length,
+    },
+    {
+      id: 'resp-playbook',
+      title: 'Собрать playbook для zero-day и пересмотра SLA',
+      caption:
+        'Аварийная обработка и пересмотр SLA должны проходить по воспроизводимому сценарию, а не в ручном хаосе.',
+      progressLabel: `${playbookClosed}/${sequenceTasks.length || 1}`,
+      complete: sequenceTasks.length === 0 || playbookClosed === sequenceTasks.length,
     },
     {
       id: 'resp-risk',
@@ -283,6 +307,17 @@ export function getMissionReviewItems(mission: MissionState): MissionReviewItem[
 
   if (mission.kind === 'prioritization') {
     return [
+      ...(mission.prioritizationWaveTasks ?? []).map((task) => {
+        const evaluation = evaluatePrioritizationWaveTask(task)
+        return {
+          id: task.id,
+          title: task.title,
+          section: task.section,
+          importance: task.importance,
+          status: evaluation.status,
+          feedback: evaluation.feedback,
+        }
+      }),
       ...(mission.prioritizationRankingTasks ?? []).map((task) => {
         const evaluation = evaluatePrioritizationRankingTask(task)
         return {
@@ -308,17 +343,30 @@ export function getMissionReviewItems(mission: MissionState): MissionReviewItem[
     ]
   }
 
-  return (mission.responseCases ?? []).map((item) => {
-    const evaluation = evaluateResponseCase(item)
-    return {
-      id: item.id,
-      title: item.title,
-      section: 'response',
-      importance: item.importance,
-      status: evaluation.status,
-      feedback: evaluation.feedback,
-    }
-  })
+  return [
+    ...(mission.responseSequenceTasks ?? []).map((task) => {
+      const evaluation = evaluateResponseSequenceTask(task)
+      return {
+        id: task.id,
+        title: task.title,
+        section: task.section,
+        importance: task.importance,
+        status: evaluation.status,
+        feedback: evaluation.feedback,
+      }
+    }),
+    ...(mission.responseCases ?? []).map((item) => {
+      const evaluation = evaluateResponseCase(item)
+      return {
+        id: item.id,
+        title: item.title,
+        section: 'response',
+        importance: item.importance,
+        status: evaluation.status,
+        feedback: evaluation.feedback,
+      }
+    }),
+  ]
 }
 
 export function getMissionScore(metrics: MissionMetrics, objectives: MissionObjective[]) {
@@ -455,6 +503,38 @@ function evaluateInventoryAsset(asset: InventoryAsset) {
   }
 }
 
+function evaluatePrioritizationWaveTask(task: PrioritizationWaveTask) {
+  if (task.selectedOptionIds.length === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Ожидаемый состав аварийной волны: ${joinWaveLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  const hasExactSelection = hasExactSet(task.selectedOptionIds, task.correctOptionIds)
+
+  if (hasExactSelection) {
+    return {
+      status: 'correct' as const,
+      feedback: task.explanation,
+    }
+  }
+
+  const selectedCorrect = task.selectedOptionIds.filter((id) => task.correctOptionIds.includes(id)).length
+
+  if (selectedCorrect > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Часть emergency-slot собрана верно, но итоговый состав должен быть таким: ${joinWaveLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Ожидаемый состав аварийной волны: ${joinWaveLabels(task)}. ${task.explanation}`,
+  }
+}
+
 function evaluatePrioritizationCase(item: PrioritizationCase) {
   const hasAnyAnswer = item.selectedDecision !== null || item.selectedFactors.length > 0
 
@@ -466,13 +546,11 @@ function evaluatePrioritizationCase(item: PrioritizationCase) {
   }
 
   const decisionCorrect = item.selectedDecision === item.correctDecision
-  const exactFactors = hasExactSet(item.selectedFactors, item.requiredFactors)
+  const exactFactors = hasAcceptableFactorSelection(item)
   const someFactorPresent = item.requiredFactors.some((factor) =>
     item.selectedFactors.includes(factor),
   )
-  const extraFactors = item.selectedFactors.some(
-    (factor) => !item.requiredFactors.includes(factor),
-  )
+  const extraFactors = item.selectedFactors.some((factor) => !getAllowedFactors(item).includes(factor))
 
   if (decisionCorrect && exactFactors) {
     return {
@@ -531,6 +609,38 @@ function evaluatePrioritizationRankingTask(task: PrioritizationRankingTask) {
   }
 }
 
+function evaluateResponseSequenceTask(task: ResponseSequenceTask) {
+  if (!task.touched || task.selectedOrderIds.length === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Ожидаемая последовательность: ${joinResponseSequenceLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  const correctPositions = task.selectedOrderIds.filter(
+    (itemId, index) => task.correctOrderIds[index] === itemId,
+  ).length
+
+  if (correctPositions === task.correctOrderIds.length) {
+    return {
+      status: 'correct' as const,
+      feedback: task.explanation,
+    }
+  }
+
+  if (correctPositions > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Плейбук собран не до конца: ожидается ${joinResponseSequenceLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Ожидаемая последовательность: ${joinResponseSequenceLabels(task)}. ${task.explanation}`,
+  }
+}
+
 function evaluateResponseCase(item: ResponseCase) {
   const hasAnyAnswer =
     item.selectedMethod !== null ||
@@ -546,9 +656,10 @@ function evaluateResponseCase(item: ResponseCase) {
 
   const methodCorrect = item.selectedMethod === item.correctMethod
   const windowCorrect = item.selectedWindow === item.correctWindow
-  const verificationCorrect = hasExactSet(
+  const verificationCorrect = hasAcceptableSet(
     item.selectedVerification,
     item.requiredVerification,
+    item.allowedVerification,
   )
   const verificationPartial = item.requiredVerification.some((step) =>
     item.selectedVerification.includes(step),
@@ -590,11 +701,26 @@ function joinFactorLabels(factors: PrioritizationCase['requiredFactors']) {
   return factors.map((factor) => `«${labelForFactor(factor)}»`).join(', ')
 }
 
+function joinWaveLabels(task: PrioritizationWaveTask) {
+  return task.correctOptionIds
+    .map((id) => task.options.find((item) => item.id === id)?.title ?? id)
+    .join('; ')
+}
+
 function joinVerificationLabels(steps: ResponseCase['requiredVerification']) {
   return steps.map((step) => `«${labelForVerification(step)}»`).join(', ')
 }
 
 function joinRankingLabels(task: PrioritizationRankingTask) {
+  return task.correctOrderIds
+    .map((id, index) => {
+      const entry = task.entries.find((item) => item.id === id)
+      return `${index + 1}. ${entry?.title ?? id}`
+    })
+    .join('; ')
+}
+
+function joinResponseSequenceLabels(task: ResponseSequenceTask) {
   return task.correctOrderIds
     .map((id, index) => {
       const entry = task.entries.find((item) => item.id === id)
@@ -610,6 +736,23 @@ function hasExactSet<T extends string>(selected: T[], expected: T[]) {
 
   const expectedSet = new Set(expected)
   return selected.every((item) => expectedSet.has(item))
+}
+
+function hasAcceptableSet<T extends string>(selected: T[], required: T[], allowed?: T[]) {
+  const allowedSet = new Set(allowed ?? required)
+
+  return (
+    required.every((item) => selected.includes(item)) &&
+    selected.every((item) => allowedSet.has(item))
+  )
+}
+
+function getAllowedFactors(item: PrioritizationCase) {
+  return item.allowedFactors ?? item.requiredFactors
+}
+
+function hasAcceptableFactorSelection(item: PrioritizationCase) {
+  return hasAcceptableSet(item.selectedFactors, item.requiredFactors, item.allowedFactors)
 }
 
 function getStatusScore(status: ReviewStatus) {
@@ -630,6 +773,109 @@ function getWeight(importance: 'critical' | 'important') {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
+}
+
+export function getInventoryModeStatus(asset: InventoryAsset, mode: 'classification' | 'scan') {
+  if (mode === 'classification') {
+    const answered = [asset.selectedRole !== null, asset.selectedSla !== null].filter(Boolean).length
+    const correctCount = [
+      asset.selectedRole === asset.expectedRole,
+      asset.selectedSla === asset.expectedSla,
+    ].filter(Boolean).length
+
+    if (answered === 0) {
+      return 'unanswered' as const
+    }
+
+    if (correctCount === 2) {
+      return 'correct' as const
+    }
+
+    return correctCount > 0 ? ('partial' as const) : ('wrong' as const)
+  }
+
+  if (asset.selectedScanStrategy === null) {
+    return 'unanswered' as const
+  }
+
+  return asset.selectedScanStrategy === asset.expectedScanStrategy
+    ? ('correct' as const)
+    : ('wrong' as const)
+}
+
+export function getPrioritizationModeStatus(
+  item: PrioritizationCase,
+  mode: 'queue' | 'factors',
+) {
+  if (mode === 'queue') {
+    if (item.selectedDecision === null) {
+      return 'unanswered' as const
+    }
+
+    return item.selectedDecision === item.correctDecision ? ('correct' as const) : ('wrong' as const)
+  }
+
+  if (item.selectedFactors.length === 0) {
+    return 'unanswered' as const
+  }
+
+  if (hasAcceptableFactorSelection(item)) {
+    return 'correct' as const
+  }
+
+  return item.requiredFactors.some((factor) => item.selectedFactors.includes(factor))
+    ? ('partial' as const)
+    : ('wrong' as const)
+}
+
+export function getPrioritizationRankingTaskStatus(task: PrioritizationRankingTask) {
+  return evaluatePrioritizationRankingTask(task).status
+}
+
+export function getPrioritizationWaveTaskStatus(task: PrioritizationWaveTask) {
+  return evaluatePrioritizationWaveTask(task).status
+}
+
+export function getResponseModeStatus(item: ResponseCase, mode: 'planning' | 'control') {
+  if (mode === 'planning') {
+    const answered = [item.selectedMethod !== null, item.selectedWindow !== null].filter(Boolean).length
+    const correctCount = [
+      item.selectedMethod === item.correctMethod,
+      item.selectedWindow === item.correctWindow,
+    ].filter(Boolean).length
+
+    if (answered === 0) {
+      return 'unanswered' as const
+    }
+
+    if (correctCount === 2) {
+      return 'correct' as const
+    }
+
+    return correctCount > 0 ? ('partial' as const) : ('wrong' as const)
+  }
+
+  if (item.selectedVerification.length === 0) {
+    return 'unanswered' as const
+  }
+
+  if (
+    hasAcceptableSet(
+      item.selectedVerification,
+      item.requiredVerification,
+      item.allowedVerification,
+    )
+  ) {
+    return 'correct' as const
+  }
+
+  return item.requiredVerification.some((step) => item.selectedVerification.includes(step))
+    ? ('partial' as const)
+    : ('wrong' as const)
+}
+
+export function getResponseSequenceTaskStatus(task: ResponseSequenceTask) {
+  return evaluateResponseSequenceTask(task).status
 }
 
 export function labelForRole(role: InventoryAsset['expectedRole']) {

@@ -2256,3 +2256,26 @@
 .control-select__menu--bottom {
   transform-origin: top center;
 }
+
+.choice-button__stack {
+  display: grid;
+  gap: 0.22rem;
+  text-align: left;
+}
+
+.choice-button__stack strong {
+  margin: 0;
+}
+
+.choice-button__stack small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.choice-button:disabled {
+  opacity: 0.46;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
