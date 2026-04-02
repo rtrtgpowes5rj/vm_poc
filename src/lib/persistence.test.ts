@@ -76,4 +76,23 @@ describe('campaign persistence', () => {
 
     expect(progress.allowFreePhaseAccess).toBe(true)
   })
+
+  it('hydrates newly added mission collections into older saved progress', () => {
+    clearCampaignProgress()
+
+    const progress = createDefaultCampaignProgress()
+    const responseMission = progress.missionStates['mission-remediation-control']
+
+    if (responseMission) {
+      delete responseMission.responseSequenceTasks
+    }
+
+    saveCampaignProgress(progress)
+
+    const restored = loadCampaignProgress()
+
+    expect(
+      restored.missionStates['mission-remediation-control'].responseSequenceTasks?.length,
+    ).toBeGreaterThan(0)
+  })
 })

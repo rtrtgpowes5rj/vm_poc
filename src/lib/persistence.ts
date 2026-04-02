@@ -43,7 +43,10 @@ export function loadCampaignProgress(): CampaignProgress {
       return fallback
     }
 
-    const missionStates = parsed.missionStates ?? fallback.missionStates
+    const missionStates = mergeMissionStates(
+      fallback.missionStates,
+      parsed.missionStates,
+    )
     const maxHintBalance = Math.max(50 - countUsedHintsInCampaign(missionStates), 0)
 
     return {
@@ -65,6 +68,93 @@ export function loadCampaignProgress(): CampaignProgress {
   } catch {
     return fallback
   }
+}
+
+function mergeMissionStates(
+  fallbackStates: Record<string, MissionState>,
+  parsedStates?: Record<string, MissionState>,
+) {
+  if (!parsedStates) {
+    return fallbackStates
+  }
+
+  return Object.fromEntries(
+    Object.entries(fallbackStates).map(([missionId, fallbackMission]) => [
+      missionId,
+      mergeMissionState(
+        fallbackMission,
+        parsedStates[missionId] as MissionState | undefined,
+      ),
+    ]),
+  ) as Record<string, MissionState>
+}
+
+function mergeMissionState(fallbackMission: MissionState, parsedMission?: MissionState) {
+  if (!parsedMission) {
+    return fallbackMission
+  }
+
+  return {
+    ...fallbackMission,
+    ...parsedMission,
+    methodNotes: parsedMission.methodNotes ?? fallbackMission.methodNotes,
+    alerts: parsedMission.alerts ?? fallbackMission.alerts,
+    stakeholders: parsedMission.stakeholders ?? fallbackMission.stakeholders,
+    learningGoals: parsedMission.learningGoals ?? fallbackMission.learningGoals,
+    failureModes: parsedMission.failureModes ?? fallbackMission.failureModes,
+    governanceQuestions: mergeCollections(
+      fallbackMission.governanceQuestions,
+      parsedMission.governanceQuestions,
+    ),
+    governanceMappingTasks: mergeCollections(
+      fallbackMission.governanceMappingTasks,
+      parsedMission.governanceMappingTasks,
+    ),
+    inventoryAssets: mergeCollections(
+      fallbackMission.inventoryAssets,
+      parsedMission.inventoryAssets,
+    ),
+    prioritizationCases: mergeCollections(
+      fallbackMission.prioritizationCases,
+      parsedMission.prioritizationCases,
+    ),
+    prioritizationRankingTasks: mergeCollections(
+      fallbackMission.prioritizationRankingTasks,
+      parsedMission.prioritizationRankingTasks,
+    ),
+    prioritizationWaveTasks: mergeCollections(
+      fallbackMission.prioritizationWaveTasks,
+      parsedMission.prioritizationWaveTasks,
+    ),
+    responseCases: mergeCollections(
+      fallbackMission.responseCases,
+      parsedMission.responseCases,
+    ),
+    responseSequenceTasks: mergeCollections(
+      fallbackMission.responseSequenceTasks,
+      parsedMission.responseSequenceTasks,
+    ),
+  }
+}
+
+function mergeCollections<T extends { id: string }>(
+  fallbackCollection?: T[],
+  parsedCollection?: T[],
+) {
+  if (!fallbackCollection) {
+    return parsedCollection
+  }
+
+  if (!parsedCollection) {
+    return fallbackCollection
+  }
+
+  const parsedMap = new Map(parsedCollection.map((item) => [item.id, item]))
+
+  return fallbackCollection.map((fallbackItem) => ({
+    ...fallbackItem,
+    ...(parsedMap.get(fallbackItem.id) ?? {}),
+  }))
 }
 
 export function saveCampaignProgress(progress: CampaignProgress) {
