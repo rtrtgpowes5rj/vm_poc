@@ -50,6 +50,30 @@ export const campaignChapters: CampaignChapter[] = [
     status: 'locked',
     implemented: true,
   },
+  {
+    id: 'mission-metrics-control',
+    phase: 'Фаза 05',
+    title: 'Метрики и контроль процесса',
+    summary:
+      'Строим систему KPI, дашборды по аудиториям и учимся читать отклонения как PDCA-сигнал для действия.',
+    stakes:
+      'Без метрик процесс слеп: нельзя управлять тем, что не измеряется, и обосновывать бюджет перед советом директоров.',
+    estimated: '20 минут',
+    status: 'locked',
+    implemented: true,
+  },
+  {
+    id: 'mission-maturity-improvement',
+    phase: 'Фаза 06',
+    title: 'Зрелость и совершенствование',
+    summary:
+      'Диагностируем структурные проблемы VM-программы по 8 принципам VMBook и строим дорожную карту организационных улучшений.',
+    stakes:
+      'Без системной диагностики улучшения превращаются в случайные эксперименты с непредсказуемым результатом.',
+    estimated: '20-25 минут',
+    status: 'locked',
+    implemented: true,
+  },
 ]
 
 export function createMissionState(missionId: string): MissionState {
@@ -109,6 +133,41 @@ function cloneBlueprint(blueprint: MissionBlueprint): MissionState {
       allowedVerification: item.allowedVerification ? [...item.allowedVerification] : undefined,
     })),
     responseSequenceTasks: blueprint.responseSequenceTasks?.map((task) => ({
+      ...task,
+      entries: task.entries.map((entry) => ({ ...entry })),
+      correctOrderIds: [...task.correctOrderIds],
+      selectedOrderIds: [...task.selectedOrderIds],
+    })),
+    metricsKpiTasks: blueprint.metricsKpiTasks?.map((task) => ({
+      ...task,
+      options: task.options.map((opt) => ({ ...opt })),
+      correctOptionIds: [...task.correctOptionIds],
+      selectedOptionIds: [...task.selectedOptionIds],
+    })),
+    metricsDashboardTasks: blueprint.metricsDashboardTasks?.map((task) => ({
+      ...task,
+      rows: task.rows.map((row) => ({ ...row, correctAudiences: [...row.correctAudiences], selectedAudiences: [...row.selectedAudiences] })),
+    })),
+    metricsInterpretationCases: blueprint.metricsInterpretationCases?.map((item) => ({
+      ...item,
+      snapshots: [{ ...item.snapshots[0] }, { ...item.snapshots[1] }] as [typeof item.snapshots[0], typeof item.snapshots[1]],
+      actionOptions: item.actionOptions.map((opt) => ({ ...opt })),
+      correctActionIds: [...item.correctActionIds],
+      selectedActionIds: [...item.selectedActionIds],
+    })),
+    maturityAuditCases: blueprint.maturityAuditCases?.map((item) => ({
+      ...item,
+      violationOptions: item.violationOptions.map((opt) => ({ ...opt })),
+      correctViolationIds: [...item.correctViolationIds],
+      selectedViolationIds: [...item.selectedViolationIds],
+    })),
+    maturityImprovementTasks: blueprint.maturityImprovementTasks?.map((task) => ({
+      ...task,
+      entries: task.entries.map((entry) => ({ ...entry })),
+      correctEntryIds: [...task.correctEntryIds],
+      selectedEntryIds: [...task.selectedEntryIds],
+    })),
+    maturitySequenceTasks: blueprint.maturitySequenceTasks?.map((task) => ({
       ...task,
       entries: task.entries.map((entry) => ({ ...entry })),
       correctOrderIds: [...task.correctOrderIds],

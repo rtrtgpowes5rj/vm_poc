@@ -2,6 +2,12 @@ import type {
   GovernanceMappingTask,
   GovernanceQuestion,
   InventoryAsset,
+  MaturityAuditCase,
+  MaturityImprovementTask,
+  MaturitySequenceTask,
+  MetricsDashboardTask,
+  MetricsInterpretationCase,
+  MetricsKpiTask,
   MissionState,
   PrioritizationCase,
   PrioritizationRankingTask,
@@ -210,6 +216,92 @@ export function getMissionObjectives(mission: MissionState): MissionObjective[] 
     ]
   }
 
+  if (mission.kind === 'metrics') {
+    const kpiTasks = mission.metricsKpiTasks ?? []
+    const dashboardTasks = mission.metricsDashboardTasks ?? []
+    const interpretCases = mission.metricsInterpretationCases ?? []
+    const criticalKpi = kpiTasks.filter((t) => t.importance === 'critical')
+    const criticalKpiClosed = criticalKpi.filter(
+      (t) => evaluateMetricsKpiTask(t).status === 'correct',
+    ).length
+    const dashboardClosed = dashboardTasks.filter(
+      (t) => evaluateMetricsDashboardTask(t).status === 'correct',
+    ).length
+    const interpretClosed = interpretCases.filter(
+      (c) => evaluateMetricsInterpretationCase(c).status === 'correct',
+    ).length
+
+    return [
+      {
+        id: 'metrics-kpi',
+        title: 'Выбрать правильный набор KPI для каждой из 3 аудиторий',
+        caption:
+          'Стратегические и операционные KPI нельзя смешивать: CISO утонет в деталях, аналитик не увидит сигналов действий.',
+        progressLabel: `${criticalKpiClosed}/${criticalKpi.length}`,
+        complete: criticalKpiClosed === criticalKpi.length,
+      },
+      {
+        id: 'metrics-dashboard',
+        title: 'Корректно разметить KPI по аудиториям в матрице',
+        caption:
+          'Правильная разметка — основа управленческого дашборда. Ошибка здесь делает оба инструмента неэффективными.',
+        progressLabel: `${dashboardClosed}/${dashboardTasks.length || 1}`,
+        complete: dashboardTasks.length === 0 || dashboardClosed === dashboardTasks.length,
+      },
+      {
+        id: 'metrics-interpret',
+        title: 'Диагностировать оба отклонения и предложить PDCA-действие',
+        caption:
+          'Метрики существуют для действий. Правильный PDCA-Check переводит отклонение в корректирующий шаг.',
+        progressLabel: `${interpretClosed}/${interpretCases.length || 1}`,
+        complete: interpretCases.length === 0 || interpretClosed === interpretCases.length,
+      },
+    ]
+  }
+
+  if (mission.kind === 'improvement') {
+    const auditCases = mission.maturityAuditCases ?? []
+    const improvementTasks = mission.maturityImprovementTasks ?? []
+    const sequenceTasks = mission.maturitySequenceTasks ?? []
+    const criticalAudit = auditCases.filter((c) => c.importance === 'critical')
+    const criticalAuditClosed = criticalAudit.filter(
+      (c) => evaluateMaturityAuditCase(c).status === 'correct',
+    ).length
+    const improvementClosed = improvementTasks.filter(
+      (t) => evaluateMaturityImprovementTask(t).status === 'correct',
+    ).length
+    const roadmapClosed = sequenceTasks.filter(
+      (t) => evaluateMaturitySequenceTask(t).status === 'correct',
+    ).length
+
+    return [
+      {
+        id: 'maturity-audit',
+        title: 'Идентифицировать нарушенные принципы в обоих аудит-кейсах',
+        caption:
+          'Точная диагностика принципов — основа для правильного выбора улучшений. Симптомы без диагноза ведут к лечению не той болезни.',
+        progressLabel: `${criticalAuditClosed}/${criticalAudit.length}`,
+        complete: criticalAuditClosed === criticalAudit.length,
+      },
+      {
+        id: 'maturity-improvement',
+        title: 'Выбрать топ-3 приоритетных улучшения',
+        caption:
+          'Без CMDB любая автоматизация ненадёжна. Без согласованного SLA любые сроки — конфликт. Фундамент раньше надстройки.',
+        progressLabel: `${improvementClosed}/${improvementTasks.length || 1}`,
+        complete: improvementTasks.length === 0 || improvementClosed === improvementTasks.length,
+      },
+      {
+        id: 'maturity-roadmap',
+        title: 'Собрать корректную дорожную карту изменений',
+        caption:
+          'Порядок имеет значение: договорённости → данные → автоматизация → измерение. Нельзя измерять то, чего ещё нет.',
+        progressLabel: `${roadmapClosed}/${sequenceTasks.length || 1}`,
+        complete: sequenceTasks.length === 0 || roadmapClosed === sequenceTasks.length,
+      },
+    ]
+  }
+
   const cases = mission.responseCases ?? []
   const sequenceTasks = mission.responseSequenceTasks ?? []
   const criticalCases = cases.filter((item) => item.importance === 'critical')
@@ -336,6 +428,82 @@ export function getMissionReviewItems(mission: MissionState): MissionReviewItem[
           title: item.title,
           section: 'priority',
           importance: item.importance,
+          status: evaluation.status,
+          feedback: evaluation.feedback,
+        }
+      }),
+    ]
+  }
+
+  if (mission.kind === 'metrics') {
+    return [
+      ...(mission.metricsKpiTasks ?? []).map((task) => {
+        const evaluation = evaluateMetricsKpiTask(task)
+        return {
+          id: task.id,
+          title: task.title,
+          section: task.section,
+          importance: task.importance,
+          status: evaluation.status,
+          feedback: evaluation.feedback,
+        }
+      }),
+      ...(mission.metricsDashboardTasks ?? []).map((task) => {
+        const evaluation = evaluateMetricsDashboardTask(task)
+        return {
+          id: task.id,
+          title: task.title,
+          section: task.section,
+          importance: task.importance,
+          status: evaluation.status,
+          feedback: evaluation.feedback,
+        }
+      }),
+      ...(mission.metricsInterpretationCases ?? []).map((item) => {
+        const evaluation = evaluateMetricsInterpretationCase(item)
+        return {
+          id: item.id,
+          title: item.title,
+          section: item.section,
+          importance: item.importance,
+          status: evaluation.status,
+          feedback: evaluation.feedback,
+        }
+      }),
+    ]
+  }
+
+  if (mission.kind === 'improvement') {
+    return [
+      ...(mission.maturityAuditCases ?? []).map((item) => {
+        const evaluation = evaluateMaturityAuditCase(item)
+        return {
+          id: item.id,
+          title: item.title,
+          section: item.section,
+          importance: item.importance,
+          status: evaluation.status,
+          feedback: evaluation.feedback,
+        }
+      }),
+      ...(mission.maturityImprovementTasks ?? []).map((task) => {
+        const evaluation = evaluateMaturityImprovementTask(task)
+        return {
+          id: task.id,
+          title: task.title,
+          section: task.section,
+          importance: task.importance,
+          status: evaluation.status,
+          feedback: evaluation.feedback,
+        }
+      }),
+      ...(mission.maturitySequenceTasks ?? []).map((task) => {
+        const evaluation = evaluateMaturitySequenceTask(task)
+        return {
+          id: task.id,
+          title: task.title,
+          section: task.section,
+          importance: task.importance,
           status: evaluation.status,
           feedback: evaluation.feedback,
         }
@@ -685,6 +853,193 @@ function evaluateResponseCase(item: ResponseCase) {
   }
 }
 
+function evaluateMetricsKpiTask(task: MetricsKpiTask) {
+  if (task.selectedOptionIds.length === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Ожидаемый набор KPI: ${joinMetricsKpiLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  if (hasExactSet(task.selectedOptionIds, task.correctOptionIds)) {
+    return {
+      status: 'correct' as const,
+      feedback: task.explanation,
+    }
+  }
+
+  const correctHits = task.selectedOptionIds.filter((id) => task.correctOptionIds.includes(id)).length
+
+  if (correctHits > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Часть набора собрана верно, но для этой аудитории нужен точный комплект KPI: ${joinMetricsKpiLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Ожидаемый набор KPI: ${joinMetricsKpiLabels(task)}. ${task.explanation}`,
+  }
+}
+
+function evaluateMetricsDashboardTask(task: MetricsDashboardTask) {
+  const answeredRows = task.rows.filter((row) => row.selectedAudiences.length > 0).length
+  const correctRows = task.rows.filter((row) =>
+    hasExactSet(row.selectedAudiences, row.correctAudiences),
+  ).length
+
+  if (answeredRows === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Ожидаемая разметка: ${joinMetricsDashboardLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  if (correctRows === task.rows.length) {
+    return {
+      status: 'correct' as const,
+      feedback: task.explanation,
+    }
+  }
+
+  if (correctRows > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Часть KPI размечена корректно, но матрицу нужно довести до точного соответствия: ${joinMetricsDashboardLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Ожидаемая разметка: ${joinMetricsDashboardLabels(task)}. ${task.explanation}`,
+  }
+}
+
+function evaluateMetricsInterpretationCase(item: MetricsInterpretationCase) {
+  if (item.selectedActionIds.length === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Ожидаемое PDCA-действие: ${joinMetricsInterpretationLabels(item)}. ${item.explanation}`,
+    }
+  }
+
+  if (hasExactSet(item.selectedActionIds, item.correctActionIds)) {
+    return {
+      status: 'correct' as const,
+      feedback: item.explanation,
+    }
+  }
+
+  const correctHits = item.selectedActionIds.filter((id) => item.correctActionIds.includes(id)).length
+
+  if (correctHits > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Часть реакции выбрана верно, но PDCA-шаг должен быть точнее: ${joinMetricsInterpretationLabels(item)}. ${item.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Ожидаемое PDCA-действие: ${joinMetricsInterpretationLabels(item)}. ${item.explanation}`,
+  }
+}
+
+function evaluateMaturityAuditCase(item: MaturityAuditCase) {
+  if (item.selectedViolationIds.length === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Нарушенные принципы: ${joinMaturityViolationLabels(item)}. ${item.explanation}`,
+    }
+  }
+
+  if (hasExactSet(item.selectedViolationIds, item.correctViolationIds)) {
+    return {
+      status: 'correct' as const,
+      feedback: item.explanation,
+    }
+  }
+
+  const correctHits = item.selectedViolationIds.filter((id) =>
+    item.correctViolationIds.includes(id),
+  ).length
+
+  if (correctHits > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Диагностика частично верна, но полный набор принципов такой: ${joinMaturityViolationLabels(item)}. ${item.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Нарушенные принципы: ${joinMaturityViolationLabels(item)}. ${item.explanation}`,
+  }
+}
+
+function evaluateMaturityImprovementTask(task: MaturityImprovementTask) {
+  if (task.selectedEntryIds.length === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Ожидаемый набор улучшений: ${joinMaturityImprovementLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  if (hasExactSet(task.selectedEntryIds, task.correctEntryIds)) {
+    return {
+      status: 'correct' as const,
+      feedback: task.explanation,
+    }
+  }
+
+  const correctHits = task.selectedEntryIds.filter((id) => task.correctEntryIds.includes(id)).length
+
+  if (correctHits > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Приоритеты выбраны не до конца точно. Здесь ожидаются: ${joinMaturityImprovementLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Ожидаемый набор улучшений: ${joinMaturityImprovementLabels(task)}. ${task.explanation}`,
+  }
+}
+
+function evaluateMaturitySequenceTask(task: MaturitySequenceTask) {
+  if (!task.touched || task.selectedOrderIds.length === 0) {
+    return {
+      status: 'unanswered' as const,
+      feedback: `Ожидаемая дорожная карта: ${joinMaturitySequenceLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  const correctPositions = task.selectedOrderIds.filter(
+    (itemId, index) => task.correctOrderIds[index] === itemId,
+  ).length
+
+  if (correctPositions === task.correctOrderIds.length) {
+    return {
+      status: 'correct' as const,
+      feedback: task.explanation,
+    }
+  }
+
+  if (correctPositions > 0) {
+    return {
+      status: 'partial' as const,
+      feedback: `Порядок изменений частично верный. Ожидается: ${joinMaturitySequenceLabels(task)}. ${task.explanation}`,
+    }
+  }
+
+  return {
+    status: 'wrong' as const,
+    feedback: `Ожидаемая дорожная карта: ${joinMaturitySequenceLabels(task)}. ${task.explanation}`,
+  }
+}
+
 function joinExpectedLabels(question: GovernanceQuestion) {
   return question.correctOptionIds
     .map((id) => question.options.find((item) => item.id === id)?.label ?? id)
@@ -721,6 +1076,48 @@ function joinRankingLabels(task: PrioritizationRankingTask) {
 }
 
 function joinResponseSequenceLabels(task: ResponseSequenceTask) {
+  return task.correctOrderIds
+    .map((id, index) => {
+      const entry = task.entries.find((item) => item.id === id)
+      return `${index + 1}. ${entry?.title ?? id}`
+    })
+    .join('; ')
+}
+
+function joinMetricsKpiLabels(task: MetricsKpiTask) {
+  return task.correctOptionIds
+    .map((id) => task.options.find((item) => item.id === id)?.label ?? id)
+    .join(', ')
+}
+
+function joinMetricsDashboardLabels(task: MetricsDashboardTask) {
+  return task.rows
+    .map((row) => {
+      const audiences = row.correctAudiences.join(' + ')
+      return `${row.kpiLabel} → ${audiences}`
+    })
+    .join('; ')
+}
+
+function joinMetricsInterpretationLabels(item: MetricsInterpretationCase) {
+  return item.correctActionIds
+    .map((id) => item.actionOptions.find((option) => option.id === id)?.label ?? id)
+    .join(', ')
+}
+
+function joinMaturityViolationLabels(item: MaturityAuditCase) {
+  return item.correctViolationIds
+    .map((id) => item.violationOptions.find((option) => option.id === id)?.label ?? id)
+    .join(', ')
+}
+
+function joinMaturityImprovementLabels(task: MaturityImprovementTask) {
+  return task.correctEntryIds
+    .map((id) => task.entries.find((entry) => entry.id === id)?.title ?? id)
+    .join('; ')
+}
+
+function joinMaturitySequenceLabels(task: MaturitySequenceTask) {
   return task.correctOrderIds
     .map((id, index) => {
       const entry = task.entries.find((item) => item.id === id)
