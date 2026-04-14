@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ArrowUp,
   BellRing,
-  BookOpenCheck,
   Gauge,
   Lightbulb,
   Network,
@@ -42,7 +41,6 @@ import {
   Panel,
   StatusBadge,
   ReviewItemCard,
-  StakeholderCard,
   labelForAssetRoleUi,
   labelForPriorityDecision,
   labelForPriorityFactor,
@@ -120,6 +118,16 @@ export function WorkspaceScreen({
   onToggleResponseVerification: (caseId: string, step: VerificationStep) => void
 }) {
   const tabs = getTabsForMission(mission)
+  const guide = getWorkspaceGuide(mission, activeTab)
+  const visibleObjectives = [...objectives]
+    .sort((left, right) => Number(left.complete) - Number(right.complete))
+    .slice(0, 3)
+  const contextualAlert =
+    mission.alerts.find((alert) => alert.kind === 'intel' || alert.kind === 'business') ??
+    mission.alerts[0]
+  const contextualStakeholder = getContextStakeholder(mission, activeTab)
+  const contextualNote = getContextNote(mission, activeTab)
+
   return (
     <section className="workspace-layout">
       <div className="workspace-head">
@@ -169,38 +177,29 @@ export function WorkspaceScreen({
         })}
       </div>
 
-      <div className="workspace-grid">
-        <aside className="left-rail">
-          <Panel title="Цели фазы" icon={ShieldAlert}>
-            <div className="objective-list">
-              {objectives.map((objective) => (
-                <div
-                  key={objective.id}
-                  className={`objective-card ${objective.complete ? 'objective-card--done' : ''}`}
-                >
-                  <div className="objective-card__head">
-                    <strong>{objective.title}</strong>
-                    <span>{objective.complete ? 'ok' : 'in progress'}</span>
-                  </div>
-                  <p>{objective.caption}</p>
-                  <span>{objective.progressLabel}</span>
-                </div>
-              ))}
-            </div>
-          </Panel>
+      <div className="workspace-guide">
+        <div className="workspace-guide__lead">
+          <p className="eyebrow">{guide.kicker}</p>
+          <h3>{guide.title}</h3>
+          <p>{guide.body}</p>
+        </div>
 
-          <Panel title="Методические опоры" icon={BookOpenCheck}>
-            <div className="method-note-list">
-              {mission.methodNotes.map((note) => (
-                <div key={note.id} className="method-note">
-                  <strong>{note.title}</strong>
-                  <p>{note.body}</p>
-                  <small>{note.source}</small>
-                </div>
-              ))}
+        <div className="workspace-guide__list">
+          {guide.points.map((point) => (
+            <div key={point.title} className="workspace-guide__point">
+              <strong>{point.title}</strong>
+              <p>{point.body}</p>
             </div>
-          </Panel>
-        </aside>
+          ))}
+        </div>
+
+        <div className="workspace-guide__outcome">
+          <span>После этого шага</span>
+          <p>{guide.outcome}</p>
+        </div>
+      </div>
+
+      <div className="workspace-grid workspace-grid--guided">
 
         <div className="center-stage">
           {mission.kind === 'governance' && activeTab === 'charter' ? (
@@ -315,8 +314,57 @@ export function WorkspaceScreen({
           {activeTab === 'review' ? <ReviewSection reviewItems={reviewItems} /> : null}
         </div>
 
-        <aside className="right-rail">
-          <Panel title="Mission Pulse" icon={Gauge}>
+        <aside className="right-rail right-rail--guided">
+          <Panel title="Фокус фазы" icon={ShieldAlert}>
+            <div className="objective-list objective-list--compact">
+              {visibleObjectives.map((objective) => (
+                <div
+                  key={objective.id}
+                  className={`objective-card objective-card--compact ${
+                    objective.complete ? 'objective-card--done' : ''
+                  }`}
+                >
+                  <div className="objective-card__head">
+                    <strong>{objective.title}</strong>
+                    <span>{objective.complete ? 'ok' : 'now'}</span>
+                  </div>
+                  <p>{objective.caption}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Контекст решения" icon={BellRing}>
+            <div className="context-stack">
+              {contextualAlert ? (
+                <div className="context-card">
+                  <span>сигнал</span>
+                  <strong>{contextualAlert.title}</strong>
+                  <p>{contextualAlert.summary}</p>
+                </div>
+              ) : null}
+
+              {contextualStakeholder ? (
+                <div className="context-card">
+                  <span>позиция команды</span>
+                  <strong>
+                    {contextualStakeholder.name} · {contextualStakeholder.role}
+                  </strong>
+                  <p>{contextualStakeholder.quote}</p>
+                </div>
+              ) : null}
+
+              {contextualNote ? (
+                <div className="context-card">
+                  <span>ориентир</span>
+                  <strong>{contextualNote.title}</strong>
+                  <p>{contextualNote.body}</p>
+                </div>
+              ) : null}
+            </div>
+          </Panel>
+
+          <Panel title="Состояние фазы" icon={Gauge}>
             <MetricRail
               label="Точность решений"
               tone={metrics.quality >= 80 ? 'good' : 'warning'}
@@ -349,27 +397,6 @@ export function WorkspaceScreen({
               <p>Подсказки скрыты по умолчанию и тратятся из общего лимита на всю кампанию.</p>
               <span>{hintBankRemaining} из 50 осталось</span>
             </div>
-          </Panel>
-
-          <Panel title="Сигналы и ограничения" icon={BellRing}>
-            <div className="alert-list">
-              {mission.alerts.map((alert) => (
-                <div key={alert.id} className={`alert-card alert-card--${alert.kind}`}>
-                  <div className="alert-card__topline">
-                    <strong>{alert.title}</strong>
-                    <span>{alert.timeLabel}</span>
-                  </div>
-                  <p>{alert.summary}</p>
-                  <small>{alert.cta}</small>
-                </div>
-              ))}
-            </div>
-          </Panel>
-
-          <Panel title="Участники процесса" icon={Network}>
-            {mission.stakeholders.map((stakeholder) => (
-              <StakeholderCard key={stakeholder.id} stakeholder={stakeholder} />
-            ))}
           </Panel>
         </aside>
       </div>
@@ -1290,34 +1317,312 @@ function getSequenceProgressLabel(task: ResponseSequenceTask) {
   return `${task.selectedOrderIds.length} позиций`
 }
 
+function getWorkspaceGuide(mission: MissionState, activeTab: MissionTab) {
+  if (mission.kind === 'governance' && activeTab === 'charter') {
+    return {
+      kicker: 'контур процесса',
+      title: 'Сначала определяем, от какого ущерба вообще строится VM.',
+      body:
+        'На этом шаге мы не обсуждаем инструмент и не собираем шум из находок. Нужно зафиксировать недопустимые события и разложить путь атаки по ролям активов.',
+      points: [
+        {
+          title: 'Выбери бизнес-события',
+          body: 'В основу процесса ложатся деньги, доступность сервиса и компрометация данных, а не технические неудобства команды.',
+        },
+        {
+          title: 'Разметь цепочку атаки',
+          body: 'Периметр, ключевые и целевые системы должны получить осмысленную роль в сценарии нарушения.',
+        },
+        {
+          title: 'Не стартуй со сканера',
+          body: 'Если каркас не собран, следующая фаза превратится в спор о том, что именно сканировать и зачем.',
+        },
+      ],
+      outcome:
+        'После этого шага у команды появится понятный разговор о риске: что именно мы защищаем, через что приходит атака и где проходит граница процесса.',
+    }
+  }
+
+  if (mission.kind === 'governance' && activeTab === 'agreements') {
+    return {
+      kicker: 'договорённости',
+      title: 'Теперь переводим логику процесса в роли, артефакты и выполнимые сроки.',
+      body:
+        'Здесь важно не “назначить цифры”, а собрать управляемый контур: кто владеет процессом, какие артефакты обязательны и как сроки привязаны к реальности ИТ.',
+      points: [
+        {
+          title: 'Закрепи ownership',
+          body: 'VM не живёт без владельца процесса и понятной ответственности ИБ, ИТ и владельцев сервисов.',
+        },
+        {
+          title: 'Согласуй SLA',
+          body: 'Сроки должны учитывать окна изменений, тестирование и возможность компенсирующих мер.',
+        },
+        {
+          title: 'Оставь рабочие артефакты',
+          body: 'Нужны не презентации, а документы и правила, по которым команда реально будет исполнять процесс.',
+        },
+      ],
+      outcome:
+        'На выходе у процесса появляется язык, на котором смогут разговаривать между собой ИБ, ИТ и бизнес.',
+    }
+  }
+
+  if (mission.kind === 'inventory' && activeTab === 'classification') {
+    return {
+      kicker: 'карта активов',
+      title: 'Здесь мы не просто перечисляем системы, а связываем их с риском и режимом обработки.',
+      body:
+        'Категоризация нужна для того, чтобы дальше не спорить о важности актива постфактум. Важен не только хост, но и его роль в недопустимом событии.',
+      points: [
+        {
+          title: 'Определи роль актива',
+          body: 'Периметр, ключевые и целевые системы должны быть разделены без двусмысленности.',
+        },
+        {
+          title: 'Назначь правильный SLA',
+          body: 'Срок зависит от критичности и операционной реальности, а не только от яркости названия уязвимости.',
+        },
+        {
+          title: 'Не путай special-case активы с обычными хостами',
+          body: 'Legacy, mobile и virtual IP требуют отдельного режима учёта и контроля.',
+        },
+      ],
+      outcome:
+        'После этого шага видно, каким активам нужен быстрый цикл, а какие нельзя вести по стандартному шаблону.',
+    }
+  }
+
+  if (mission.kind === 'inventory' && activeTab === 'scan') {
+    return {
+      kicker: 'контроль и покрытие',
+      title: 'Теперь подбираем не “любой скан”, а уместный способ наблюдения за каждым классом активов.',
+      body:
+        'Сканирование должно быть достоверным и безопасным. Для части активов нужен аудит, для части discovery, а некоторые должны идти через agent или ручной контроль.',
+      points: [
+        {
+          title: 'Выбери подходящий источник данных',
+          body: 'Полный аудит полезен не везде: иногда безопаснее discovery, agent или manual-режим.',
+        },
+        {
+          title: 'Исключай осознанно',
+          body: 'Virtual IP и подобные сущности нужно выводить из host-логики без потери связи с периметром.',
+        },
+        {
+          title: 'Смотри на достоверность',
+          body: 'Главная цель этого шага — не покрытие ради покрытия, а доверие к реестру и будущим отчётам.',
+        },
+      ],
+      outcome:
+        'Хороший результат даёт реестр, которому можно верить, и стратегию контроля, которая не ломает инфраструктуру.',
+    }
+  }
+
+  if (mission.kind === 'prioritization' && activeTab === 'queue') {
+    return {
+      kicker: 'первая волна',
+      title: 'Сначала формируем первую очередь, которую ИТ действительно должна взять в работу.',
+      body:
+        'Emergency-слот ограничен. Поэтому сюда попадают только кейсы, которые сейчас дают кратчайший путь к недопустимому событию.',
+      points: [
+        {
+          title: 'Собери первую волну',
+          body: 'Вне очереди должны идти реальные hot-case, а не всё подряд с высоким severity.',
+        },
+        {
+          title: 'Разнеси backlog по режимам',
+          body: 'Срочно, планово, компенсирующие меры и принятие риска — это разные управленческие решения.',
+        },
+        {
+          title: 'Думай ограниченным ресурсом',
+          body: 'Если “срочно” становится всё, приоритизация перестаёт существовать.',
+        },
+      ],
+      outcome:
+        'После этого шага видно, какая часть backlog действительно должна ехать первой, а что можно перевести в управляемый план.',
+    }
+  }
+
+  if (mission.kind === 'prioritization' && activeTab === 'factors') {
+    return {
+      kicker: 'аргументация',
+      title: 'Теперь очередь нужно защитить факторами, а не только intuition и CVSS.',
+      body:
+        'Сильная приоритизация объяснима. Нужно показать, какие именно факторы делают кейс срочным: ущерб, значимость актива, доступность, эксплойт и тренд эксплуатации.',
+      points: [
+        {
+          title: 'Выбери только релевантные факторы',
+          body: 'Лишние причины размывают аргументацию и показывают, что решение собрано “на всякий случай”.',
+        },
+        {
+          title: 'Связывай фактор с активом',
+          body: 'Один и тот же CVSS весит по-разному на тестовом сервере и на целевой системе в периметре.',
+        },
+        {
+          title: 'Покажи, почему ИТ должна согласиться',
+          body: 'Очередь без обоснования быстро превращается в спор между функциями.',
+        },
+      ],
+      outcome:
+        'Хорошо собранный факторный слой делает очередь исполнимой и снимает часть конфликтов между безопасностью и эксплуатацией.',
+    }
+  }
+
+  if (mission.kind === 'response' && activeTab === 'planning') {
+    return {
+      kicker: 'способ обработки',
+      title: 'Не каждая уязвимость лечится патчем — здесь мы выбираем правильный режим обработки.',
+      body:
+        'На этом шаге важно не “закрыть задачу”, а подобрать действие, которое соответствует природе кейса: patch, config, WAF, monitoring или замена компонента.',
+      points: [
+        {
+          title: 'Соотнеси кейс и метод',
+          body: 'Misconfig чинится конфигурацией, zero-day без патча закрывается временной защитой, legacy переводится в исключение.',
+        },
+        {
+          title: 'Выбери реалистичное окно',
+          body: 'Emergency нужен не всегда. Иногда сильнее выглядит корректный planned-режим или formal exception.',
+        },
+        {
+          title: 'Не подменяй снижение риска видимостью работы',
+          body: 'Отправить тикет ещё не значит реально уменьшить поверхность атаки.',
+        },
+      ],
+      outcome:
+        'После этого шага у каждого кейса появляется не просто владелец, а осмысленный способ обработки и правильный темп исполнения.',
+    }
+  }
+
+  if (mission.kind === 'response' && activeTab === 'control') {
+    return {
+      kicker: 'контроль результата',
+      title: 'Закрытие кейса нужно подтвердить, иначе риск останется в системе под видом выполненной работы.',
+      body:
+        'Повторный скан, синхронизация с владельцем, мониторинг и пересмотр SLA — это не бюрократия, а доказательство, что решение реально сработало.',
+      points: [
+        {
+          title: 'Выбери проверку по типу кейса',
+          body: 'Не каждому кейсу нужен весь набор шагов; важна корректная комбинация контроля.',
+        },
+        {
+          title: 'Фиксируй системные срывы',
+          body: 'Если SLA стабильно нарушается, это уже вопрос к процессу, а не к одной конкретной задаче.',
+        },
+        {
+          title: 'Не считай тикет доказательством',
+          body: 'Процесс завершается не тогда, когда задача закрыта, а когда подтверждён результат.',
+        },
+      ],
+      outcome:
+        'Хороший контроль переводит устранение из формального статуса “сделано” в измеримый факт снижения риска.',
+    }
+  }
+
+  if (mission.kind === 'response' && activeTab === 'playbook') {
+    return {
+      kicker: 'кризисный сценарий',
+      title: 'Сейчас тренируем не ответ на один кейс, а последовательность действий команды под давлением.',
+      body:
+        'Плейбук нужен там, где нельзя позволить себе импровизацию: zero-day без патча, повторный срыв SLA, нестабильный периметр или высокое бизнес-давление.',
+      points: [
+        {
+          title: 'Собери шаги в правильном порядке',
+          body: 'Важно не только что делать, но и в какой момент: владельцы, временная защита, мониторинг, формализация исключения.',
+        },
+        {
+          title: 'Держи эскалацию управляемой',
+          body: 'Кризисный процесс не должен превращаться в хаотичную переписку без владельца и следующего шага.',
+        },
+        {
+          title: 'Сохрани след для процесса',
+          body: 'После кризиса команда должна не только потушить инцидент, но и обновить управленческий контур.',
+        },
+      ],
+      outcome:
+        'После этого шага видно, способен ли процесс удерживать редкие, но самые опасные сценарии без ручной самодеятельности.',
+    }
+  }
+
+  return {
+    kicker: 'разбор',
+    title: 'Теперь посмотрим, что из решений выдержало практическую проверку.',
+    body:
+      'Разбор нужен не для галочки, а чтобы увидеть, где решение было действительно сильным, а где оно только выглядело аккуратно на экране.',
+    points: [
+      {
+        title: 'Сильные решения',
+        body: 'Сохраняем то, что можно повторять дальше без дополнительного ручного контроля.',
+      },
+      {
+        title: 'Слабые места',
+        body: 'Смотрим не только на ошибку, но и на её управленческое последствие для процесса.',
+      },
+      {
+        title: 'Следующий модуль',
+        body: 'Идём дальше только с пониманием, что именно стоит унести в следующую фазу.',
+      },
+    ],
+    outcome:
+      'Хороший разбор помогает не просто получить балл, а перенести правильную логику в следующий модуль.',
+  }
+}
+
+function getContextStakeholder(mission: MissionState, activeTab: MissionTab) {
+  if (activeTab === 'review') {
+    return mission.stakeholders.find((stakeholder) => stakeholder.stance === 'ally') ?? mission.stakeholders[0]
+  }
+
+  return mission.stakeholders.find((stakeholder) => stakeholder.stance === 'resistant') ?? mission.stakeholders[0]
+}
+
+function getContextNote(mission: MissionState, activeTab: MissionTab) {
+  if (mission.methodNotes.length === 0) {
+    return null
+  }
+
+  let noteIndex = 0
+
+  if (mission.kind === 'governance' && activeTab === 'agreements') {
+    noteIndex = Math.min(2, mission.methodNotes.length - 1)
+  } else if (mission.kind === 'inventory' && activeTab === 'scan') {
+    noteIndex = Math.min(1, mission.methodNotes.length - 1)
+  } else if (mission.kind === 'prioritization' && activeTab === 'factors') {
+    noteIndex = Math.min(1, mission.methodNotes.length - 1)
+  } else if (mission.kind === 'response' && activeTab === 'playbook') {
+    noteIndex = Math.min(2, mission.methodNotes.length - 1)
+  }
+
+  return mission.methodNotes[noteIndex] ?? null
+}
+
 function getTabsForMission(mission: MissionState) {
   if (mission.kind === 'governance') {
     return [
-      { id: 'charter', label: 'Каркас процесса', icon: Radar },
-      { id: 'agreements', label: 'Роли и SLA', icon: Network },
+      { id: 'charter', label: 'Контекст', icon: Radar },
+      { id: 'agreements', label: 'Договорённости', icon: Network },
       { id: 'review', label: 'Разбор', icon: ShieldAlert },
     ]
   }
 
   if (mission.kind === 'inventory') {
     return [
-      { id: 'classification', label: 'Категоризация', icon: Server },
-      { id: 'scan', label: 'Сканирование', icon: Radar },
+      { id: 'classification', label: 'Карта активов', icon: Server },
+      { id: 'scan', label: 'Контроль', icon: Radar },
       { id: 'review', label: 'Разбор', icon: ShieldAlert },
     ]
   }
 
   if (mission.kind === 'prioritization') {
     return [
-      { id: 'queue', label: 'Очередь', icon: Radar },
-      { id: 'factors', label: 'Факторы', icon: Network },
+      { id: 'queue', label: 'Первая волна', icon: Radar },
+      { id: 'factors', label: 'Аргументы', icon: Network },
       { id: 'review', label: 'Разбор', icon: ShieldAlert },
     ]
   }
 
   return [
-    { id: 'planning', label: 'План', icon: Wrench },
-    { id: 'control', label: 'Контроль', icon: BellRing },
+    { id: 'planning', label: 'Обработка', icon: Wrench },
+    { id: 'control', label: 'Проверка', icon: BellRing },
     { id: 'playbook', label: 'Плейбук', icon: Network },
     { id: 'review', label: 'Разбор', icon: ShieldAlert },
   ]

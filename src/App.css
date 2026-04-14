@@ -2328,3 +2328,422 @@
   transform: none;
   box-shadow: none;
 }
+
+.campaign-layout--guided {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.35rem;
+}
+
+.campaign-hero--guided .campaign-hero__grid {
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  align-items: stretch;
+}
+
+.campaign-hero--guided .campaign-hero__copy {
+  display: grid;
+  align-content: start;
+}
+
+.campaign-hero--guided h2 {
+  max-width: 11ch;
+}
+
+.campaign-intent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.campaign-intent-card,
+.campaign-module,
+.brief-story,
+.brief-scene,
+.workspace-guide,
+.context-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(19, 19, 21, 0.9), rgba(8, 8, 9, 0.88)),
+    radial-gradient(circle at top right, rgba(252, 62, 36, 0.08), transparent 36%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    var(--shadow-xl);
+}
+
+.campaign-intent-card {
+  padding: 1rem 1.05rem;
+  border-radius: 1.2rem;
+}
+
+.campaign-intent-card span,
+.campaign-module__phase,
+.campaign-module__index,
+.brief-progress__step span,
+.brief-scene__signal span,
+.context-card span,
+.workspace-guide__outcome span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.campaign-intent-card strong,
+.campaign-module__details strong,
+.brief-scene__point strong,
+.workspace-guide__point strong,
+.context-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.campaign-intent-card p,
+.campaign-module__body p,
+.brief-scene__copy p,
+.brief-scene__point p,
+.brief-scene__signal p,
+.workspace-guide__lead p,
+.workspace-guide__point p,
+.workspace-guide__outcome p,
+.context-card p {
+  margin: 0;
+  color: var(--muted-bright);
+}
+
+.campaign-orbit-points {
+  position: absolute;
+  inset: auto 1rem 1rem 1rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.campaign-orbit-point {
+  padding: 0.8rem 0.92rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(12px);
+}
+
+.campaign-orbit-point small {
+  color: var(--muted-bright);
+  font-size: 0.78rem;
+}
+
+.campaign-orbit-point--completed {
+  border-color: rgba(252, 62, 36, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(252, 62, 36, 0.12);
+}
+
+.campaign-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.campaign-module {
+  text-align: left;
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  padding: 1.35rem;
+  border-radius: 1.5rem;
+  color: inherit;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.campaign-module:not(:disabled):hover {
+  transform: translateY(-2px);
+  border-color: rgba(252, 62, 36, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 28px 70px rgba(0, 0, 0, 0.36);
+}
+
+.campaign-module:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.campaign-module__topline,
+.campaign-module__footer,
+.brief-actions--guided,
+.brief-actions__secondary {
+  display: flex;
+  align-items: center;
+}
+
+.campaign-module__topline,
+.campaign-module__footer,
+.brief-actions--guided {
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.campaign-module__state,
+.campaign-module__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted-bright);
+}
+
+.campaign-module__body {
+  display: grid;
+  gap: 1rem;
+}
+
+.campaign-module__body h3,
+.brief-scene__copy h3,
+.workspace-guide__lead h3 {
+  margin: 0 0 0.45rem;
+  font-size: clamp(1.3rem, 2vw, 1.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.campaign-module__details {
+  display: grid;
+  gap: 0.8rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.brief-layout--guided {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.brief-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.brief-story,
+.brief-scene {
+  position: relative;
+  padding: 1.45rem;
+  border-radius: 1.7rem;
+  overflow: hidden;
+}
+
+.brief-story__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.brief-story__copy {
+  display: grid;
+  align-content: start;
+}
+
+.brief-glance {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.3rem;
+}
+
+.brief-glance div {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.brief-glance span {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.brief-glance strong {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 1.05rem;
+}
+
+.brief-story__visual {
+  min-height: 22rem;
+}
+
+.brief-progress {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.brief-progress__step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  align-items: start;
+  width: 100%;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.brief-progress__step:hover {
+  transform: translateY(-1px);
+  border-color: rgba(252, 62, 36, 0.26);
+}
+
+.brief-progress__step--active {
+  border-color: rgba(252, 62, 36, 0.34);
+  background: rgba(252, 62, 36, 0.1);
+  box-shadow: 0 18px 45px rgba(252, 62, 36, 0.14);
+}
+
+.brief-progress__step strong {
+  display: block;
+  margin-bottom: 0.18rem;
+}
+
+.brief-progress__step small {
+  color: var(--muted-bright);
+}
+
+.brief-scene {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-height: 100%;
+}
+
+.brief-scene__copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.brief-scene__list,
+.workspace-guide__list,
+.context-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.brief-scene__point,
+.workspace-guide__point,
+.context-card {
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+}
+
+.brief-scene__signal,
+.workspace-guide__outcome {
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(252, 62, 36, 0.14);
+  border-radius: 1rem;
+  background: rgba(252, 62, 36, 0.08);
+}
+
+.brief-actions--guided {
+  justify-content: flex-end;
+}
+
+.workspace-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.95fr) minmax(260px, 0.8fr);
+  gap: 1rem;
+  padding: 1.2rem;
+  border-radius: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.workspace-guide__lead {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+}
+
+.workspace-grid--guided {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.workspace-grid--guided .center-stage,
+.workspace-grid--guided .right-rail {
+  display: grid;
+  gap: 1rem;
+}
+
+.right-rail--guided {
+  top: 9.25rem;
+}
+
+.objective-list--compact {
+  gap: 0.75rem;
+}
+
+.objective-card--compact p {
+  margin-bottom: 0;
+}
+
+.context-card strong {
+  font-size: 0.95rem;
+}
+
+.context-card p {
+  line-height: 1.6;
+}
+
+.right-rail--guided .hint-bank-card {
+  margin-top: 1rem;
+}
+
+@media (max-width: 1260px) {
+  .brief-flow,
+  .workspace-guide {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-grid--guided {
+    grid-template-columns: 1fr;
+  }
+
+  .right-rail--guided {
+    position: static;
+  }
+}
+
+@media (max-width: 1080px) {
+  .campaign-hero--guided .campaign-hero__grid,
+  .brief-story__hero,
+  .campaign-module-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .campaign-intent-grid,
+  .brief-glance {
+    grid-template-columns: 1fr;
+  }
+
+  .brief-actions--guided {
+    justify-content: stretch;
+  }
+
+  .brief-actions--guided .primary-button,
+  .brief-actions--guided .ghost-button {
+    width: 100%;
+  }
+}

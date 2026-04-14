@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { AlertTriangle, ChevronRight } from 'lucide-react'
+import { AlertTriangle, ArrowRight, ChevronRight, Sparkles } from 'lucide-react'
 import type { CampaignChapter } from '../types'
 
 export function CampaignScreen({
@@ -14,11 +14,22 @@ export function CampaignScreen({
   onToggleFreePhaseAccess: () => void
 }) {
   const completedCount = chapters.filter((chapter) => chapter.status === 'completed').length
+  const nextChapter = chapters.find((chapter) => {
+    if (!chapter.implemented) {
+      return false
+    }
+
+    if (allowFreePhaseAccess) {
+      return true
+    }
+
+    return chapter.status === 'active' || chapter.status === 'available'
+  })
 
   return (
-    <section className="campaign-layout">
+    <section className="campaign-layout campaign-layout--guided">
       <motion.div
-        className="campaign-hero"
+        className="campaign-hero campaign-hero--guided"
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -26,7 +37,7 @@ export function CampaignScreen({
         <div className="campaign-hero__grid">
           <div className="campaign-hero__copy">
             <div className="campaign-hero__topline">
-              <p className="eyebrow">campaign / vm maturity</p>
+              <p className="eyebrow">campaign / vm operating model</p>
               <div className="campaign-hero__controls">
                 <button
                   type="button"
@@ -37,54 +48,61 @@ export function CampaignScreen({
                 >
                   {allowFreePhaseAccess ? 'test access / all phases' : 'guided access'}
                 </button>
-                <span className="campaign-hero__status">live scenario</span>
+                <span className="campaign-hero__status">4 modules live</span>
               </div>
             </div>
 
-            <h2>
-              От хаотичного реагирования на CVE к зрелому VM-процессу, где решения
-              проходят проверку риском, операционной реальностью и разговором с ИТ.
-            </h2>
+            <h2>Построить VM-процесс, который выдерживает реальную эксплуатацию, а не только отчёт.</h2>
 
             <p className="hero-copy">
-              Кампания начинается не со сканера, а с методики: сначала фиксируем
-              недопустимые события, затем строим контур активов, после этого
-              приоритизируем backlog и только потом идём в устранение и контроль.
+              Кампания ведёт от первой договорённости о процессе до обработки сложных кейсов.
+              Каждый модуль даёт короткий контекст, одно главное рабочее полотно и понятный
+              вывод о том, что получилось у команды.
             </p>
 
             <div className="campaign-kpis">
               <div>
-                <span>phases</span>
+                <span>modules</span>
                 <strong>{chapters.length}</strong>
               </div>
               <div>
-                <span>completed</span>
+                <span>stabilized</span>
                 <strong>{completedCount}</strong>
               </div>
               <div>
-                <span>mode</span>
+                <span>logic</span>
                 <strong>risk-led</strong>
               </div>
             </div>
 
-            <div className="campaign-ribbon">
-              <div>
+            <div className="campaign-intent-grid">
+              <div className="campaign-intent-card">
                 <span>01</span>
-                недопустимые события, роли, артефакты и SLA
+                <strong>Сначала контекст</strong>
+                <p>Каждый модуль начинается с короткой вводной, а не со стены из текста.</p>
               </div>
-              <div>
+              <div className="campaign-intent-card">
                 <span>02</span>
-                инвентаризация активов и отдельные правила для legacy, mobile и virtual
+                <strong>Потом решение</strong>
+                <p>На экране всегда одно главное действие, а не три равноправных колонки.</p>
               </div>
-              <div>
+              <div className="campaign-intent-card">
                 <span>03</span>
-                risk-based приоритизация вместо CVSS-only
-              </div>
-              <div>
-                <span>04</span>
-                устранение, компенсирующие меры, контроль и пересмотр SLA
+                <strong>Дальше последствия</strong>
+                <p>После шага мы показываем не только score, а смысл принятого решения.</p>
               </div>
             </div>
+
+            {nextChapter ? (
+              <button
+                type="button"
+                className="primary-button primary-button--hero"
+                onClick={() => onSelect(nextChapter.id)}
+              >
+                Продолжить с модуля: {nextChapter.title}
+                <ArrowRight size={18} />
+              </button>
+            ) : null}
           </div>
 
           <motion.div
@@ -100,9 +118,9 @@ export function CampaignScreen({
             <div className="campaign-visual__beam campaign-visual__beam--one" />
             <div className="campaign-visual__beam campaign-visual__beam--two" />
 
-            <div className="campaign-visual__legend">
+            <div className="campaign-orbit-points">
               {chapters.map((chapter, index) => (
-                <div key={chapter.id} className={`campaign-node campaign-node--${chapter.status}`}>
+                <div key={chapter.id} className={`campaign-orbit-point campaign-orbit-point--${chapter.status}`}>
                   <span>{String(index + 1).padStart(2, '0')}</span>
                   <strong>{chapter.title}</strong>
                   <small>{labelForMissionStatus(chapter.status, allowFreePhaseAccess)}</small>
@@ -113,58 +131,70 @@ export function CampaignScreen({
         </div>
       </motion.div>
 
-      <div className="campaign-rail">
+      <div className="campaign-module-grid">
         {chapters.map((chapter, index) => {
           const isLocked = chapter.status === 'locked' && !allowFreePhaseAccess
-          const testUnlocked = chapter.status === 'locked' && allowFreePhaseAccess
+          const isTestUnlocked = chapter.status === 'locked' && allowFreePhaseAccess
 
           return (
             <motion.button
               key={chapter.id}
               type="button"
-              className={`mission-tile mission-tile--${chapter.status}`}
+              className={`campaign-module campaign-module--${chapter.status}`}
               onClick={() => {
                 if (!isLocked) {
                   onSelect(chapter.id)
                 }
               }}
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.45 }}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 * index, duration: 0.42 }}
               disabled={isLocked}
             >
-              <div className="mission-tile__header">
-                <div>
-                  <p>{chapter.phase}</p>
-                  <h3>{chapter.title}</h3>
-                </div>
-
-                <span className="mission-state">
-                  {isLocked ? <AlertTriangle size={16} /> : <ChevronRight size={16} />}
+              <div className="campaign-module__topline">
+                <span className="campaign-module__phase">{chapter.phase}</span>
+                <span className="campaign-module__state">
+                  {isLocked ? <AlertTriangle size={15} /> : <ChevronRight size={15} />}
                   {labelForMissionStatus(chapter.status, allowFreePhaseAccess)}
                 </span>
               </div>
 
-              <p className="mission-summary">{chapter.summary}</p>
+              <div className="campaign-module__body">
+                <div>
+                  <h3>{chapter.title}</h3>
+                  <p>{chapter.summary}</p>
+                </div>
 
-              <div className="mission-meta">
-                <span>{chapter.estimated}</span>
-                <span>{chapter.implemented ? 'играбельно' : 'в разработке'}</span>
+                <div className="campaign-module__details">
+                  <div>
+                    <span>Что удерживаем в фокусе</span>
+                    <strong>{chapter.stakes}</strong>
+                  </div>
+                  <div>
+                    <span>Темп</span>
+                    <strong>{chapter.estimated}</strong>
+                  </div>
+                </div>
               </div>
 
-              <p className="mission-stakes">{chapter.stakes}</p>
-
-              {isLocked ? (
-                <div className="mission-lockline">
-                  <AlertTriangle size={14} />
-                  Откроется после завершения предыдущей фазы
+              <div className="campaign-module__footer">
+                <span className="campaign-module__index">{String(index + 1).padStart(2, '0')}</span>
+                <div className="campaign-module__cta">
+                  {isLocked ? (
+                    <>Откроется после предыдущего модуля</>
+                  ) : isTestUnlocked ? (
+                    <>
+                      <Sparkles size={14} />
+                      Доступно для тестового прохода
+                    </>
+                  ) : (
+                    <>
+                      Открыть модуль
+                      <ArrowRight size={15} />
+                    </>
+                  )}
                 </div>
-              ) : testUnlocked ? (
-                <div className="mission-lockline mission-lockline--test">
-                  <ChevronRight size={14} />
-                  Доступно в тестовом режиме без prerequisite
-                </div>
-              ) : null}
+              </div>
             </motion.button>
           )
         })}
@@ -182,11 +212,11 @@ function labelForMissionStatus(
   }
 
   if (status === 'active') {
-    return 'active phase'
+    return 'active'
   }
 
   if (status === 'available') {
-    return 'available'
+    return 'ready'
   }
 
   if (allowFreePhaseAccess) {
