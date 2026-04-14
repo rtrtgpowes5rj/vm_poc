@@ -4,7 +4,7 @@ export type MissionTab = string
 
 export type MissionStatus = 'available' | 'locked' | 'active' | 'completed'
 
-export type MissionKind = 'governance' | 'inventory' | 'prioritization' | 'response'
+export type MissionKind = 'governance' | 'inventory' | 'prioritization' | 'response' | 'metrics' | 'improvement'
 
 export type Importance = 'critical' | 'important'
 
@@ -37,6 +37,83 @@ export type VerificationStep = 'rescan' | 'owner-sync' | 'sla-review' | 'monitor
 
 export type RankingMove = 'up' | 'down'
 
+// VM-05 types
+export type KpiId =
+  | 'coverage-pct'
+  | 'sla-breach-pct'
+  | 'trending-count'
+  | 'avg-remediation-days'
+  | 'blocking-count'
+  | 'risk-score'
+  | 'assets-without-owner'
+  | 'false-positive-rate'
+
+export type DashboardAudience = 'ciso' | 'vm-analyst' | 'it-admin'
+
+export type PdcaAction =
+  | 'update-sla'
+  | 'expand-coverage'
+  | 'escalate-to-ciso'
+  | 'run-additional-scan'
+  | 'revise-process'
+  | 'accept-temporarily'
+  | 'add-monitoring'
+  | 'retrain-team'
+
+// VM-06 types
+export type MaturityPrinciple =
+  | 'minimize-human-dependency'
+  | 'just-in-time'
+  | 'accuracy'
+  | 'deviation-management'
+  | 'self-control'
+  | 'explicit-communication'
+  | 'embedded-in-process'
+  | 'right-tools'
+
+export type ImprovementAction =
+  | 'build-cmdb'
+  | 'negotiate-sla-trilateral'
+  | 'add-trending-feed'
+  | 'deploy-agents'
+  | 'formalize-playbook'
+  | 'add-dashboard'
+  | 'schedule-pdca-review'
+  | 'add-exception-process'
+  | 'train-it-owners'
+  | 'automate-ticketing'
+
+// Achievement types
+export type AchievementId =
+  | 'zero-hint-run'
+  | 'emergency-responder'
+  | 'perfect-prioritization'
+  | 'risk-manager'
+  | 'process-architect'
+  | 'pdca-master'
+  | 'maturity-auditor'
+
+export interface Achievement {
+  id: AchievementId
+  title: string
+  description: string
+  unlockedAt?: string
+}
+
+// Cross-mission inherited context
+export interface InheritedContextItem {
+  id: string
+  title: string
+  value: string
+}
+
+export interface InheritedContext {
+  sourceCode: string
+  sourceMissionId: string
+  label: string
+  items: InheritedContextItem[]
+}
+
 export interface Hintable {
   hint?: string
   hintUsed?: boolean
@@ -60,6 +137,8 @@ export interface Stakeholder {
   stance: StakeholderStance
   pressure: string
   quote: string
+  reactionPositive?: string
+  reactionNegative?: string
 }
 
 export interface AlertItem {
@@ -225,6 +304,135 @@ export interface ResponseSequenceTask extends Hintable {
   touched: boolean
 }
 
+// VM-05 interfaces
+export interface MetricsKpiOption {
+  id: KpiId
+  label: string
+  description: string
+  isDistractor: boolean
+}
+
+export interface MetricsKpiTask extends Hintable {
+  id: string
+  section: 'kpi' | 'dashboard' | 'interpretation'
+  targetAudience: DashboardAudience
+  title: string
+  prompt: string
+  importance: Importance
+  explanation: string
+  options: MetricsKpiOption[]
+  correctOptionIds: KpiId[]
+  selectedOptionIds: KpiId[]
+}
+
+export interface MetricsDashboardRow {
+  id: string
+  kpiId: KpiId
+  kpiLabel: string
+  kpiDescription: string
+  correctAudiences: DashboardAudience[]
+  selectedAudiences: DashboardAudience[]
+}
+
+export interface MetricsDashboardTask extends Hintable {
+  id: string
+  section: 'kpi' | 'dashboard' | 'interpretation'
+  title: string
+  prompt: string
+  importance: Importance
+  explanation: string
+  rows: MetricsDashboardRow[]
+}
+
+export interface MetricsSnapshot {
+  month: string
+  coveragePct: number
+  slaBreachPct: number
+  trendingCount: number
+  avgRemediationDays: number
+  blockingCount: number
+  annotation?: string
+}
+
+export interface MetricsInterpretationOption {
+  id: PdcaAction
+  label: string
+  reasoning: string
+}
+
+export interface MetricsInterpretationCase extends Hintable {
+  id: string
+  section: 'kpi' | 'dashboard' | 'interpretation'
+  title: string
+  prompt: string
+  importance: Importance
+  explanation: string
+  snapshots: [MetricsSnapshot, MetricsSnapshot]
+  problemStatement: string
+  actionOptions: MetricsInterpretationOption[]
+  correctActionIds: PdcaAction[]
+  selectedActionIds: PdcaAction[]
+}
+
+// VM-06 interfaces
+export interface MaturityViolationOption {
+  id: MaturityPrinciple
+  label: string
+  description: string
+}
+
+export interface MaturityAuditCase extends Hintable {
+  id: string
+  section: 'audit' | 'improvement' | 'roadmap'
+  title: string
+  prompt: string
+  scenarioDescription: string
+  importance: Importance
+  explanation: string
+  violationOptions: MaturityViolationOption[]
+  correctViolationIds: MaturityPrinciple[]
+  selectedViolationIds: MaturityPrinciple[]
+}
+
+export interface MaturityImprovementEntry {
+  id: ImprovementAction
+  title: string
+  rationale: string
+  impact: 'high' | 'medium' | 'low'
+}
+
+export interface MaturityImprovementTask extends Hintable {
+  id: string
+  section: 'audit' | 'improvement' | 'roadmap'
+  title: string
+  prompt: string
+  importance: Importance
+  explanation: string
+  selectionLimit: number
+  entries: MaturityImprovementEntry[]
+  correctEntryIds: ImprovementAction[]
+  selectedEntryIds: ImprovementAction[]
+}
+
+export interface MaturitySequenceEntry {
+  id: string
+  title: string
+  cue: string
+}
+
+export interface MaturitySequenceTask extends Hintable {
+  id: string
+  section: 'audit' | 'improvement' | 'roadmap'
+  title: string
+  prompt: string
+  importance: Importance
+  explanation: string
+  entries: MaturitySequenceEntry[]
+  correctOrderIds: string[]
+  selectedOrderIds: string[]
+  touched: boolean
+}
+
 export interface MissionBlueprint {
   id: string
   code: string
@@ -246,6 +454,12 @@ export interface MissionBlueprint {
   prioritizationWaveTasks?: PrioritizationWaveTask[]
   responseCases?: ResponseCase[]
   responseSequenceTasks?: ResponseSequenceTask[]
+  metricsKpiTasks?: MetricsKpiTask[]
+  metricsDashboardTasks?: MetricsDashboardTask[]
+  metricsInterpretationCases?: MetricsInterpretationCase[]
+  maturityAuditCases?: MaturityAuditCase[]
+  maturityImprovementTasks?: MaturityImprovementTask[]
+  maturitySequenceTasks?: MaturitySequenceTask[]
 }
 
 export interface MissionState extends MissionBlueprint {}

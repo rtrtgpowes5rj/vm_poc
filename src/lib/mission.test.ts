@@ -36,6 +36,18 @@ describe('mission mechanics', () => {
       if (mission.kind === 'response') {
         expect(mission.responseCases?.length).toBeGreaterThan(0)
       }
+
+      if (mission.kind === 'metrics') {
+        expect(mission.metricsKpiTasks?.length).toBeGreaterThan(0)
+        expect(mission.metricsDashboardTasks?.length).toBeGreaterThan(0)
+        expect(mission.metricsInterpretationCases?.length).toBeGreaterThan(0)
+      }
+
+      if (mission.kind === 'improvement') {
+        expect(mission.maturityAuditCases?.length).toBeGreaterThan(0)
+        expect(mission.maturityImprovementTasks?.length).toBeGreaterThan(0)
+        expect(mission.maturitySequenceTasks?.length).toBeGreaterThan(0)
+      }
     })
   })
 
@@ -239,6 +251,46 @@ function fillMissionWithCorrectAnswers(mission: ReturnType<typeof createMissionS
         selectedOptionIds: [...task.correctOptionIds],
       })),
       prioritizationRankingTasks: mission.prioritizationRankingTasks?.map((task) => ({
+        ...task,
+        touched: true,
+        selectedOrderIds: [...task.correctOrderIds],
+      })),
+    }
+  }
+
+  if (mission.kind === 'metrics') {
+    return {
+      ...mission,
+      metricsKpiTasks: mission.metricsKpiTasks?.map((task) => ({
+        ...task,
+        selectedOptionIds: [...task.correctOptionIds],
+      })),
+      metricsDashboardTasks: mission.metricsDashboardTasks?.map((task) => ({
+        ...task,
+        rows: task.rows.map((row) => ({
+          ...row,
+          selectedAudiences: [...row.correctAudiences],
+        })),
+      })),
+      metricsInterpretationCases: mission.metricsInterpretationCases?.map((item) => ({
+        ...item,
+        selectedActionIds: [...item.correctActionIds],
+      })),
+    }
+  }
+
+  if (mission.kind === 'improvement') {
+    return {
+      ...mission,
+      maturityAuditCases: mission.maturityAuditCases?.map((item) => ({
+        ...item,
+        selectedViolationIds: [...item.correctViolationIds],
+      })),
+      maturityImprovementTasks: mission.maturityImprovementTasks?.map((task) => ({
+        ...task,
+        selectedEntryIds: [...task.correctEntryIds],
+      })),
+      maturitySequenceTasks: mission.maturitySequenceTasks?.map((task) => ({
         ...task,
         touched: true,
         selectedOrderIds: [...task.correctOrderIds],
