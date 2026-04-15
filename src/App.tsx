@@ -19,8 +19,13 @@ import type {
   AppStage,
   AssetRole,
   ChangeWindow,
+  DashboardAudience,
+  ImprovementAction,
+  KpiId,
+  MaturityPrinciple,
   MissionState,
   MissionTab,
+  PdcaAction,
   PriorityDecision,
   PriorityFactor,
   RankingMove,
@@ -408,6 +413,110 @@ function App() {
     }))
   }
 
+  const toggleMetricsKpiOption = (taskId: string, optionId: KpiId) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      metricsKpiTasks: mission.metricsKpiTasks?.map((task) => {
+        if (task.id !== taskId) return task
+        const isSelected = task.selectedOptionIds.includes(optionId)
+        return {
+          ...task,
+          selectedOptionIds: isSelected
+            ? task.selectedOptionIds.filter((id) => id !== optionId)
+            : [...task.selectedOptionIds, optionId],
+        }
+      }),
+    }))
+  }
+
+  const toggleMetricsDashboardAudience = (taskId: string, rowId: string, audience: DashboardAudience) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      metricsDashboardTasks: mission.metricsDashboardTasks?.map((task) => {
+        if (task.id !== taskId) return task
+        return {
+          ...task,
+          rows: task.rows.map((row) => {
+            if (row.id !== rowId) return row
+            const has = row.selectedAudiences.includes(audience)
+            return {
+              ...row,
+              selectedAudiences: has
+                ? row.selectedAudiences.filter((a) => a !== audience)
+                : [...row.selectedAudiences, audience],
+            }
+          }),
+        }
+      }),
+    }))
+  }
+
+  const toggleMetricsInterpretationAction = (caseId: string, actionId: PdcaAction) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      metricsInterpretationCases: mission.metricsInterpretationCases?.map((item) => {
+        if (item.id !== caseId) return item
+        const has = item.selectedActionIds.includes(actionId)
+        return {
+          ...item,
+          selectedActionIds: has
+            ? item.selectedActionIds.filter((id) => id !== actionId)
+            : [...item.selectedActionIds, actionId],
+        }
+      }),
+    }))
+  }
+
+  const toggleMaturityViolation = (caseId: string, principleId: MaturityPrinciple) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      maturityAuditCases: mission.maturityAuditCases?.map((item) => {
+        if (item.id !== caseId) return item
+        const has = item.selectedViolationIds.includes(principleId)
+        return {
+          ...item,
+          selectedViolationIds: has
+            ? item.selectedViolationIds.filter((id) => id !== principleId)
+            : [...item.selectedViolationIds, principleId],
+        }
+      }),
+    }))
+  }
+
+  const toggleMaturityImprovementEntry = (taskId: string, entryId: ImprovementAction) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      maturityImprovementTasks: mission.maturityImprovementTasks?.map((task) => {
+        if (task.id !== taskId) return task
+        const has = task.selectedEntryIds.includes(entryId)
+        if (!has && task.selectedEntryIds.length >= task.selectionLimit) return task
+        return {
+          ...task,
+          selectedEntryIds: has
+            ? task.selectedEntryIds.filter((id) => id !== entryId)
+            : [...task.selectedEntryIds, entryId],
+        }
+      }),
+    }))
+  }
+
+  const moveMaturitySequenceEntry = (taskId: string, entryId: string, move: RankingMove) => {
+    updateMission(selectedMissionId, (mission) => ({
+      ...mission,
+      maturitySequenceTasks: mission.maturitySequenceTasks?.map((task) => {
+        if (task.id !== taskId) return task
+        const currentIndex = task.selectedOrderIds.indexOf(entryId)
+        if (currentIndex === -1) return task
+        const targetIndex = move === 'up' ? currentIndex - 1 : currentIndex + 1
+        if (targetIndex < 0 || targetIndex >= task.selectedOrderIds.length) return task
+        const nextOrder = [...task.selectedOrderIds]
+        const [moved] = nextOrder.splice(currentIndex, 1)
+        nextOrder.splice(targetIndex, 0, moved)
+        return { ...task, touched: true, selectedOrderIds: nextOrder }
+      }),
+    }))
+  }
+
   const missionHeadline =
     stage === 'workspace'
       ? 'Операционный штаб VM'
@@ -546,6 +655,12 @@ function App() {
                 onSetResponseMethod={setResponseMethod}
                 onSetResponseWindow={setResponseWindow}
                 onToggleResponseVerification={toggleResponseVerification}
+                onToggleMetricsKpiOption={toggleMetricsKpiOption}
+                onToggleMetricsDashboardAudience={toggleMetricsDashboardAudience}
+                onToggleMetricsInterpretationAction={toggleMetricsInterpretationAction}
+                onToggleMaturityViolation={toggleMaturityViolation}
+                onToggleMaturityImprovementEntry={toggleMaturityImprovementEntry}
+                onMoveMaturitySequenceEntry={moveMaturitySequenceEntry}
               />
             </motion.div>
           ) : null}
@@ -606,6 +721,10 @@ function getDefaultTab(mission: MissionState) {
       return 'classification'
     case 'prioritization':
       return 'queue'
+    case 'metrics':
+      return 'kpi'
+    case 'improvement':
+      return 'audit'
     default:
       return 'planning'
   }

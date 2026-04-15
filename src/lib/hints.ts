@@ -9,6 +9,12 @@ export type HintScope =
   | 'prioritizationWaveTasks'
   | 'responseCases'
   | 'responseSequenceTasks'
+  | 'metricsKpiTasks'
+  | 'metricsDashboardTasks'
+  | 'metricsInterpretationCases'
+  | 'maturityAuditCases'
+  | 'maturityImprovementTasks'
+  | 'maturitySequenceTasks'
 
 export type HintToken = `${HintScope}:${string}`
 
@@ -21,6 +27,12 @@ const HINT_SCOPES: HintScope[] = [
   'prioritizationWaveTasks',
   'responseCases',
   'responseSequenceTasks',
+  'metricsKpiTasks',
+  'metricsDashboardTasks',
+  'metricsInterpretationCases',
+  'maturityAuditCases',
+  'maturityImprovementTasks',
+  'maturitySequenceTasks',
 ]
 
 export function createHintToken(scope: HintScope, itemId: string): HintToken {

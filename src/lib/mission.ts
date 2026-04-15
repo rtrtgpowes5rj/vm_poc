@@ -537,6 +537,14 @@ export function getMissionReviewItems(mission: MissionState): MissionReviewItem[
   ]
 }
 
+export function getScoreTier(score: number) {
+  if (score >= 90) return { label: 'Архитектор процесса', tone: 'excellent' as const }
+  if (score >= 75) return { label: 'Системный аналитик', tone: 'good' as const }
+  if (score >= 60) return { label: 'Практик VM', tone: 'decent' as const }
+  if (score >= 45) return { label: 'Стажёр', tone: 'warning' as const }
+  return { label: 'Аудитор первого дня', tone: 'critical' as const }
+}
+
 export function getMissionScore(metrics: MissionMetrics, objectives: MissionObjective[]) {
   const objectiveBonus = Math.round(
     (objectives.filter((item) => item.complete).length / Math.max(objectives.length, 1)) * 12,

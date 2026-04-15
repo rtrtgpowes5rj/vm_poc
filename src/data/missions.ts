@@ -1252,7 +1252,7 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
         id: 'metrics-kpi-ciso',
         section: 'kpi',
         targetAudience: 'ciso',
-        title: 'KPI для CISO и совета директоров',
+        title: 'Стратегические KPI для CISO и совета директоров',
         prompt:
           'CISO нужна одна страница для квартального отчёта. Выберите KPI, которые дают стратегический сигнал об управляемости VM-программы — без операционных деталей.',
         importance: 'critical',
@@ -1271,56 +1271,6 @@ export const missionBlueprints: Record<string, MissionBlueprint> = {
           { id: 'false-positive-rate', label: 'Доля ложных срабатываний (%)', description: 'Процент найденных уязвимостей, оказавшихся ложными.', isDistractor: true },
         ],
         correctOptionIds: ['coverage-pct', 'sla-breach-pct', 'trending-count', 'avg-remediation-days'],
-        selectedOptionIds: [],
-      },
-      {
-        id: 'metrics-kpi-analyst',
-        section: 'kpi',
-        targetAudience: 'vm-analyst',
-        title: 'KPI для VM-аналитика',
-        prompt:
-          'VM-аналитик работает с очередью ежедневно. Выберите KPI, которые дают реальный операционный сигнал для принятия решений прямо сейчас.',
-        importance: 'critical',
-        hint:
-          'Аналитику важна детализация: где прорыв SLA сейчас, какие активы выпадают из контроля, trending-список для out-of-band обработки. Coverage-процент и risk-score — управленческие агрегаты, они не скажут "что делать прямо сейчас".',
-        explanation:
-          'Аналитику нужны сигналы действий: blocking-count (что горит прямо сейчас), trending-count (что вне очереди), assets-without-owner (где CMDB рвётся), sla-breach-pct и avg-remediation-days (где процесс буксует). Coverage-pct и risk-score — стратегический уровень.',
-        options: [
-          { id: 'coverage-pct', label: 'Покрытие активов сканированием (%)', description: 'Доля активов, охваченных сканером, от общего числа в CMDB.', isDistractor: true },
-          { id: 'sla-breach-pct', label: 'Доля нарушений SLA (%)', description: 'Процент уязвимостей, не устранённых в согласованный срок.', isDistractor: false },
-          { id: 'trending-count', label: 'Число трендовых уязвимостей', description: 'Количество уязвимостей из внешнего фида с активной эксплуатацией.', isDistractor: false },
-          { id: 'avg-remediation-days', label: 'Среднее время устранения (дни)', description: 'Средний срок от обнаружения до закрытия уязвимости.', isDistractor: false },
-          { id: 'blocking-count', label: 'Число критических блокеров', description: 'Количество критических уязвимостей без прогресса устранения.', isDistractor: false },
-          { id: 'risk-score', label: 'Итоговый risk-score', description: 'Агрегированный балл риска по всем активам.', isDistractor: true },
-          { id: 'assets-without-owner', label: 'Активы без ответственного', description: 'Число активов в CMDB, не привязанных к владельцу.', isDistractor: false },
-          { id: 'false-positive-rate', label: 'Доля ложных срабатываний (%)', description: 'Процент найденных уязвимостей, оказавшихся ложными.', isDistractor: true },
-        ],
-        correctOptionIds: ['blocking-count', 'trending-count', 'assets-without-owner', 'sla-breach-pct', 'avg-remediation-days'],
-        selectedOptionIds: [],
-      },
-      {
-        id: 'metrics-kpi-admin',
-        section: 'kpi',
-        targetAudience: 'it-admin',
-        title: 'KPI для ИТ-администратора',
-        prompt:
-          'ИТ-администратор хочет понять, что у него в очереди и как быстро он справляется. Выберите KPI, которые дают ему конкретный операционный вид.',
-        importance: 'important',
-        hint:
-          'Администратор работает с конкретными задачами. Его KPI — сколько критических задач ждут его и насколько быстро он с ними справляется. Программные метрики (coverage, SLA-breach по всей компании) — не его ответственность.',
-        explanation:
-          'Администратор не управляет программой VM — он исполняет задачи. Ему нужны: blocking-count (сколько срочных задач сейчас) и avg-remediation-days (его личная эффективность). Агрегаты уровня CISO и детализация уровня аналитика не дают ему операционного сигнала.',
-        options: [
-          { id: 'coverage-pct', label: 'Покрытие активов сканированием (%)', description: 'Доля активов, охваченных сканером.', isDistractor: true },
-          { id: 'sla-breach-pct', label: 'Доля нарушений SLA (%)', description: 'Процент уязвимостей вне срока — по всей организации.', isDistractor: true },
-          { id: 'trending-count', label: 'Число трендовых уязвимостей', description: 'Количество активно эксплуатируемых уязвимостей.', isDistractor: true },
-          { id: 'avg-remediation-days', label: 'Среднее время устранения (дни)', description: 'Средний срок закрытия задач.', isDistractor: false },
-          { id: 'blocking-count', label: 'Число критических блокеров', description: 'Количество критических задач без прогресса.', isDistractor: false },
-          { id: 'risk-score', label: 'Итоговый risk-score', description: 'Агрегированный балл риска.', isDistractor: true },
-          { id: 'assets-without-owner', label: 'Активы без ответственного', description: 'Число активов без владельца.', isDistractor: true },
-          { id: 'false-positive-rate', label: 'Доля ложных срабатываний (%)', description: 'Процент ложных уязвимостей.', isDistractor: true },
-        ],
-        correctOptionIds: ['blocking-count', 'avg-remediation-days'],
         selectedOptionIds: [],
       },
     ],

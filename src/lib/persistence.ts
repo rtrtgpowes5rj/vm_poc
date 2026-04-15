@@ -2,7 +2,7 @@ import { campaignChapters, createAllMissionStates } from '../data/campaign'
 import { countUsedHintsInCampaign } from './hints'
 import type { CampaignChapter, MissionState } from '../types'
 
-const STORAGE_KEY = 'vm-control-room.save.v4'
+const STORAGE_KEY = 'vm-control-room.save.v5'
 
 export type CampaignProgress = {
   chapters: CampaignChapter[]
@@ -133,6 +133,30 @@ function mergeMissionState(fallbackMission: MissionState, parsedMission?: Missio
     responseSequenceTasks: mergeCollections(
       fallbackMission.responseSequenceTasks,
       parsedMission.responseSequenceTasks,
+    ),
+    metricsKpiTasks: mergeCollections(
+      fallbackMission.metricsKpiTasks,
+      parsedMission.metricsKpiTasks,
+    ),
+    metricsDashboardTasks: mergeCollections(
+      fallbackMission.metricsDashboardTasks,
+      parsedMission.metricsDashboardTasks,
+    ),
+    metricsInterpretationCases: mergeCollections(
+      fallbackMission.metricsInterpretationCases,
+      parsedMission.metricsInterpretationCases,
+    ),
+    maturityAuditCases: mergeCollections(
+      fallbackMission.maturityAuditCases,
+      parsedMission.maturityAuditCases,
+    ),
+    maturityImprovementTasks: mergeCollections(
+      fallbackMission.maturityImprovementTasks,
+      parsedMission.maturityImprovementTasks,
+    ),
+    maturitySequenceTasks: mergeCollections(
+      fallbackMission.maturitySequenceTasks,
+      parsedMission.maturitySequenceTasks,
     ),
   }
 }

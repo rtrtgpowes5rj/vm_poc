@@ -9,6 +9,7 @@ import {
   Target,
 } from 'lucide-react'
 import type { MissionMetrics, MissionObjective, MissionReviewItem } from '../lib/mission'
+import { getScoreTier } from '../lib/mission'
 import type { CampaignChapter, MissionState } from '../types'
 import { CompletedObjective, MetricRail, Panel, ReviewItemCard } from './ui'
 
@@ -35,6 +36,7 @@ export function DebriefScreen({
 }) {
   const completedObjectives = objectives.filter((objective) => objective.complete)
   const gaps = reviewItems.filter((item) => item.status !== 'correct')
+  const tier = getScoreTier(score)
 
   return (
     <section className="debrief-layout">
@@ -60,6 +62,9 @@ export function DebriefScreen({
             <small>score</small>
             <span>{score}</span>
             <small>из 100</small>
+          </div>
+          <div className={`score-tier score-tier--${tier.tone}`}>
+            {tier.label}
           </div>
         </motion.div>
       </div>

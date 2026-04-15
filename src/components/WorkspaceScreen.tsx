@@ -2,14 +2,19 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  BarChart3,
   BellRing,
   Gauge,
+  LayoutDashboard,
   Lightbulb,
+  Map,
   Network,
   Radar,
+  Search,
   Server,
   ShieldAlert,
   Sparkles,
+  TrendingUp,
   Wrench,
 } from 'lucide-react'
 import type { MissionMetrics, MissionObjective, MissionReviewItem } from '../lib/mission'
@@ -17,11 +22,22 @@ import { createHintToken } from '../lib/hints'
 import type {
   AssetRole,
   ChangeWindow,
+  DashboardAudience,
   GovernanceMappingTask,
   GovernanceQuestion,
+  ImprovementAction,
   InventoryAsset,
+  KpiId,
+  MaturityAuditCase,
+  MaturityImprovementTask,
+  MaturityPrinciple,
+  MaturitySequenceTask,
+  MetricsDashboardTask,
+  MetricsInterpretationCase,
+  MetricsKpiTask,
   MissionState,
   MissionTab,
+  PdcaAction,
   PriorityDecision,
   PriorityFactor,
   PrioritizationCase,
@@ -65,6 +81,15 @@ const priorityFactors: PriorityFactor[] = [
 const responseMethods: TaskMethod[] = ['patch', 'config', 'waf', 'monitoring', 'replace']
 const changeWindows: ChangeWindow[] = ['emergency', 'planned', 'exception', 'defer']
 const verificationSteps: VerificationStep[] = ['rescan', 'owner-sync', 'sla-review', 'monitoring']
+const audienceOptions: DashboardAudience[] = ['ciso', 'vm-analyst', 'it-admin']
+
+function labelForAudience(audience: DashboardAudience) {
+  switch (audience) {
+    case 'ciso': return 'CISO'
+    case 'vm-analyst': return 'VM-аналитик'
+    case 'it-admin': return 'ИТ-администратор'
+  }
+}
 
 export function WorkspaceScreen({
   activeTab,
@@ -91,6 +116,12 @@ export function WorkspaceScreen({
   onSetResponseMethod,
   onSetResponseWindow,
   onToggleResponseVerification,
+  onToggleMetricsKpiOption,
+  onToggleMetricsDashboardAudience,
+  onToggleMetricsInterpretationAction,
+  onToggleMaturityViolation,
+  onToggleMaturityImprovementEntry,
+  onMoveMaturitySequenceEntry,
 }: {
   activeTab: MissionTab
   canFinish: boolean
@@ -116,9 +147,14 @@ export function WorkspaceScreen({
   onSetResponseMethod: (caseId: string, method: TaskMethod) => void
   onSetResponseWindow: (caseId: string, window: ChangeWindow) => void
   onToggleResponseVerification: (caseId: string, step: VerificationStep) => void
+  onToggleMetricsKpiOption: (taskId: string, optionId: KpiId) => void
+  onToggleMetricsDashboardAudience: (taskId: string, rowId: string, audience: DashboardAudience) => void
+  onToggleMetricsInterpretationAction: (caseId: string, actionId: PdcaAction) => void
+  onToggleMaturityViolation: (caseId: string, principleId: MaturityPrinciple) => void
+  onToggleMaturityImprovementEntry: (taskId: string, entryId: ImprovementAction) => void
+  onMoveMaturitySequenceEntry: (taskId: string, entryId: string, move: RankingMove) => void
 }) {
   const tabs = getTabsForMission(mission)
-  const guide = getWorkspaceGuide(mission, activeTab)
   const visibleObjectives = [...objectives]
     .sort((left, right) => Number(left.complete) - Number(right.complete))
     .slice(0, 3)
@@ -141,12 +177,6 @@ export function WorkspaceScreen({
         </div>
 
         <div className="workspace-head__actions">
-          <div className="mission-pulse-inline">
-            <span>качество {metrics.quality}%</span>
-            <span>риск {metrics.riskScore}/100</span>
-            <span>подсказки {hintBankRemaining}/50</span>
-          </div>
-
           <button
             type="button"
             className={`primary-button ${!canFinish ? 'primary-button--muted' : ''}`}
@@ -175,28 +205,6 @@ export function WorkspaceScreen({
             </button>
           )
         })}
-      </div>
-
-      <div className="workspace-guide">
-        <div className="workspace-guide__lead">
-          <p className="eyebrow">{guide.kicker}</p>
-          <h3>{guide.title}</h3>
-          <p>{guide.body}</p>
-        </div>
-
-        <div className="workspace-guide__list">
-          {guide.points.map((point) => (
-            <div key={point.title} className="workspace-guide__point">
-              <strong>{point.title}</strong>
-              <p>{point.body}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="workspace-guide__outcome">
-          <span>После этого шага</span>
-          <p>{guide.outcome}</p>
-        </div>
       </div>
 
       <div className="workspace-grid workspace-grid--guided">
@@ -307,6 +315,60 @@ export function WorkspaceScreen({
               hintBankRemaining={hintBankRemaining}
               tasks={mission.responseSequenceTasks ?? []}
               onMoveResponseSequenceEntry={onMoveResponseSequenceEntry}
+              onRevealHint={onRevealHint}
+            />
+          ) : null}
+
+          {mission.kind === 'metrics' && activeTab === 'kpi' ? (
+            <MetricsKpiSection
+              hintBankRemaining={hintBankRemaining}
+              tasks={mission.metricsKpiTasks ?? []}
+              onRevealHint={onRevealHint}
+              onToggleOption={onToggleMetricsKpiOption}
+            />
+          ) : null}
+
+          {mission.kind === 'metrics' && activeTab === 'dashboard' ? (
+            <MetricsDashboardSection
+              hintBankRemaining={hintBankRemaining}
+              tasks={mission.metricsDashboardTasks ?? []}
+              onRevealHint={onRevealHint}
+              onToggleAudience={onToggleMetricsDashboardAudience}
+            />
+          ) : null}
+
+          {mission.kind === 'metrics' && activeTab === 'interpretation' ? (
+            <MetricsInterpretationSection
+              hintBankRemaining={hintBankRemaining}
+              cases={mission.metricsInterpretationCases ?? []}
+              onRevealHint={onRevealHint}
+              onToggleAction={onToggleMetricsInterpretationAction}
+            />
+          ) : null}
+
+          {mission.kind === 'improvement' && activeTab === 'audit' ? (
+            <MaturityAuditSection
+              hintBankRemaining={hintBankRemaining}
+              cases={mission.maturityAuditCases ?? []}
+              onRevealHint={onRevealHint}
+              onToggleViolation={onToggleMaturityViolation}
+            />
+          ) : null}
+
+          {mission.kind === 'improvement' && activeTab === 'improvement' ? (
+            <MaturityImprovementSection
+              hintBankRemaining={hintBankRemaining}
+              tasks={mission.maturityImprovementTasks ?? []}
+              onRevealHint={onRevealHint}
+              onToggleEntry={onToggleMaturityImprovementEntry}
+            />
+          ) : null}
+
+          {mission.kind === 'improvement' && activeTab === 'roadmap' ? (
+            <MaturityRoadmapSection
+              hintBankRemaining={hintBankRemaining}
+              tasks={mission.maturitySequenceTasks ?? []}
+              onMoveEntry={onMoveMaturitySequenceEntry}
               onRevealHint={onRevealHint}
             />
           ) : null}
@@ -1044,6 +1106,441 @@ function ResponsePlaybookSection({
   )
 }
 
+function MetricsKpiSection({
+  hintBankRemaining,
+  tasks,
+  onRevealHint,
+  onToggleOption,
+}: {
+  hintBankRemaining: number
+  tasks: MetricsKpiTask[]
+  onRevealHint: (itemId: string) => void
+  onToggleOption: (taskId: string, optionId: KpiId) => void
+}) {
+  return (
+    <Panel title="Подбор KPI по аудитории" icon={BarChart3}>
+      <div className="scenario-list">
+        {tasks.map((task) => (
+          <div key={task.id} className="scenario-card">
+            <div className="scenario-card__head">
+              <div>
+                <strong>{task.title}</strong>
+                <p>{task.prompt}</p>
+              </div>
+              <StatusBadge
+                tone="progress"
+                label={task.selectedOptionIds.length === 0 ? 'не заполнено' : `${task.selectedOptionIds.length} KPI выбрано`}
+              />
+            </div>
+
+            <div className="scenario-meta">
+              <span className="inline-tag">аудитория: {labelForAudience(task.targetAudience)}</span>
+              <span className={`inline-tag inline-tag--${task.importance}`}>
+                {task.importance === 'critical' ? 'critical' : 'important'}
+              </span>
+            </div>
+
+            <div className="choice-grid">
+              {task.options.map((option) => (
+                <ChoiceButton
+                  key={option.id}
+                  active={task.selectedOptionIds.includes(option.id)}
+                  onClick={() => onToggleOption(task.id, option.id)}
+                >
+                  <span className="choice-button__stack">
+                    <strong>{option.label}</strong>
+                    <small>{option.description}</small>
+                  </span>
+                </ChoiceButton>
+              ))}
+            </div>
+
+            <ScenarioFooter
+              hintBankRemaining={hintBankRemaining}
+              hintText={task.hint ?? 'Каждая аудитория видит процесс VM со своего уровня. CISO управляет стратегически, аналитик — операционно, ИТ-администратор — тактически.'}
+              hintUsed={task.hintUsed}
+              hintToken={createHintToken('metricsKpiTasks', task.id)}
+              onRevealHint={onRevealHint}
+              selectionLabel={`Выбрано ${task.selectedOptionIds.length} KPI`}
+            />
+          </div>
+        ))}
+      </div>
+    </Panel>
+  )
+}
+
+function MetricsDashboardSection({
+  hintBankRemaining,
+  tasks,
+  onRevealHint,
+  onToggleAudience,
+}: {
+  hintBankRemaining: number
+  tasks: MetricsDashboardTask[]
+  onRevealHint: (itemId: string) => void
+  onToggleAudience: (taskId: string, rowId: string, audience: DashboardAudience) => void
+}) {
+  return (
+    <Panel title="Матрица дашбордов" icon={LayoutDashboard}>
+      <div className="scenario-list">
+        {tasks.map((task) => {
+          const answeredRows = task.rows.filter((r) => r.selectedAudiences.length > 0).length
+
+          return (
+            <div key={task.id} className="scenario-card">
+              <div className="scenario-card__head">
+                <div>
+                  <strong>{task.title}</strong>
+                  <p>{task.prompt}</p>
+                </div>
+                <StatusBadge
+                  tone="progress"
+                  label={answeredRows === 0 ? 'не заполнено' : `${answeredRows}/${task.rows.length} строк`}
+                />
+              </div>
+
+              <div className="dashboard-matrix">
+                <div className="dashboard-matrix__header">
+                  <div className="dashboard-matrix__cell dashboard-matrix__cell--label">KPI</div>
+                  {audienceOptions.map((a) => (
+                    <div key={a} className="dashboard-matrix__cell dashboard-matrix__cell--header">
+                      {labelForAudience(a)}
+                    </div>
+                  ))}
+                </div>
+                {task.rows.map((row) => (
+                  <div key={row.id} className="dashboard-matrix__row">
+                    <div className="dashboard-matrix__cell dashboard-matrix__cell--label">
+                      <strong>{row.kpiLabel}</strong>
+                      <small>{row.kpiDescription}</small>
+                    </div>
+                    {audienceOptions.map((audience) => (
+                      <div key={audience} className="dashboard-matrix__cell">
+                        <button
+                          type="button"
+                          className={`matrix-toggle ${row.selectedAudiences.includes(audience) ? 'matrix-toggle--active' : ''}`}
+                          onClick={() => onToggleAudience(task.id, row.id, audience)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <ScenarioFooter
+                hintBankRemaining={hintBankRemaining}
+                hintText={task.hint ?? 'Не каждый KPI нужен каждой аудитории. CISO смотрит на тренды и % покрытия, аналитик — на блокеры и SLA-нарушения, ИТ-администратор — на свою очередь.'}
+                hintUsed={task.hintUsed}
+                hintToken={createHintToken('metricsDashboardTasks', task.id)}
+                onRevealHint={onRevealHint}
+                selectionLabel={`${answeredRows}/${task.rows.length} KPI размечены`}
+              />
+            </div>
+          )
+        })}
+      </div>
+    </Panel>
+  )
+}
+
+function MetricsInterpretationSection({
+  hintBankRemaining,
+  cases,
+  onRevealHint,
+  onToggleAction,
+}: {
+  hintBankRemaining: number
+  cases: MetricsInterpretationCase[]
+  onRevealHint: (itemId: string) => void
+  onToggleAction: (caseId: string, actionId: PdcaAction) => void
+}) {
+  return (
+    <Panel title="PDCA: чтение отклонений" icon={TrendingUp}>
+      <div className="scenario-list">
+        {cases.map((item) => (
+          <div key={item.id} className="scenario-card">
+            <div className="scenario-card__head">
+              <div>
+                <strong>{item.title}</strong>
+                <p>{item.prompt}</p>
+              </div>
+              <StatusBadge
+                tone="progress"
+                label={item.selectedActionIds.length === 0 ? 'не заполнено' : `${item.selectedActionIds.length} действий`}
+              />
+            </div>
+
+            <div className="snapshot-compare">
+              <div className="snapshot-compare__col">
+                <div className="snapshot-compare__label">{item.snapshots[0].month}</div>
+                <div className="snapshot-compare__metrics">
+                  <span>Покрытие: {item.snapshots[0].coveragePct}%</span>
+                  <span>SLA-нарушения: {item.snapshots[0].slaBreachPct}%</span>
+                  <span>Trending: {item.snapshots[0].trendingCount}</span>
+                  <span>Avg remediation: {item.snapshots[0].avgRemediationDays}д</span>
+                  <span>Блокеры: {item.snapshots[0].blockingCount}</span>
+                </div>
+                {item.snapshots[0].annotation ? (
+                  <p className="snapshot-compare__note">{item.snapshots[0].annotation}</p>
+                ) : null}
+              </div>
+              <div className="snapshot-compare__col">
+                <div className="snapshot-compare__label">{item.snapshots[1].month}</div>
+                <div className="snapshot-compare__metrics">
+                  <span>Покрытие: {item.snapshots[1].coveragePct}%</span>
+                  <span>SLA-нарушения: {item.snapshots[1].slaBreachPct}%</span>
+                  <span>Trending: {item.snapshots[1].trendingCount}</span>
+                  <span>Avg remediation: {item.snapshots[1].avgRemediationDays}д</span>
+                  <span>Блокеры: {item.snapshots[1].blockingCount}</span>
+                </div>
+                {item.snapshots[1].annotation ? (
+                  <p className="snapshot-compare__note">{item.snapshots[1].annotation}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="scenario-insight">
+              <strong>Проблема</strong>
+              <p>{item.problemStatement}</p>
+            </div>
+
+            <div className="choice-grid">
+              {item.actionOptions.map((option) => (
+                <ChoiceButton
+                  key={option.id}
+                  active={item.selectedActionIds.includes(option.id)}
+                  onClick={() => onToggleAction(item.id, option.id)}
+                >
+                  <span className="choice-button__stack">
+                    <strong>{option.label}</strong>
+                    <small>{option.reasoning}</small>
+                  </span>
+                </ChoiceButton>
+              ))}
+            </div>
+
+            <ScenarioFooter
+              hintBankRemaining={hintBankRemaining}
+              hintText={item.hint ?? 'PDCA-Check — не просто "посмотреть на дашборд". Сравните два периода и определите, это системная проблема процесса или разовое отклонение.'}
+              hintUsed={item.hintUsed}
+              hintToken={createHintToken('metricsInterpretationCases', item.id)}
+              onRevealHint={onRevealHint}
+              selectionLabel={`Выбрано действий: ${item.selectedActionIds.length}`}
+            />
+          </div>
+        ))}
+      </div>
+    </Panel>
+  )
+}
+
+function MaturityAuditSection({
+  hintBankRemaining,
+  cases,
+  onRevealHint,
+  onToggleViolation,
+}: {
+  hintBankRemaining: number
+  cases: MaturityAuditCase[]
+  onRevealHint: (itemId: string) => void
+  onToggleViolation: (caseId: string, principleId: MaturityPrinciple) => void
+}) {
+  return (
+    <Panel title="Диагностика принципов" icon={Search}>
+      <div className="scenario-list">
+        {cases.map((item) => (
+          <div key={item.id} className="scenario-card">
+            <div className="scenario-card__head">
+              <div>
+                <strong>{item.title}</strong>
+                <p>{item.prompt}</p>
+              </div>
+              <StatusBadge
+                tone="progress"
+                label={item.selectedViolationIds.length === 0 ? 'не заполнено' : `${item.selectedViolationIds.length} принципов`}
+              />
+            </div>
+
+            <div className="scenario-insight">
+              <strong>Описание ситуации</strong>
+              <p>{item.scenarioDescription}</p>
+            </div>
+
+            <div className="choice-grid">
+              {item.violationOptions.map((option) => (
+                <ChoiceButton
+                  key={option.id}
+                  active={item.selectedViolationIds.includes(option.id)}
+                  onClick={() => onToggleViolation(item.id, option.id)}
+                >
+                  <span className="choice-button__stack">
+                    <strong>{option.label}</strong>
+                    <small>{option.description}</small>
+                  </span>
+                </ChoiceButton>
+              ))}
+            </div>
+
+            <ScenarioFooter
+              hintBankRemaining={hintBankRemaining}
+              hintText={item.hint ?? 'Сценарий может нарушать несколько принципов одновременно. Ищите корневые причины, а не симптомы.'}
+              hintUsed={item.hintUsed}
+              hintToken={createHintToken('maturityAuditCases', item.id)}
+              onRevealHint={onRevealHint}
+              selectionLabel={`Принципов выбрано: ${item.selectedViolationIds.length}`}
+            />
+          </div>
+        ))}
+      </div>
+    </Panel>
+  )
+}
+
+function MaturityImprovementSection({
+  hintBankRemaining,
+  tasks,
+  onRevealHint,
+  onToggleEntry,
+}: {
+  hintBankRemaining: number
+  tasks: MaturityImprovementTask[]
+  onRevealHint: (itemId: string) => void
+  onToggleEntry: (taskId: string, entryId: ImprovementAction) => void
+}) {
+  return (
+    <Panel title="Приоритетные улучшения" icon={TrendingUp}>
+      <div className="scenario-list">
+        {tasks.map((task) => {
+          const selectedCount = task.selectedEntryIds.length
+
+          return (
+            <div key={task.id} className="scenario-card">
+              <div className="scenario-card__head">
+                <div>
+                  <strong>{task.title}</strong>
+                  <p>{task.prompt}</p>
+                </div>
+                <StatusBadge
+                  tone="progress"
+                  label={selectedCount === 0 ? 'не заполнено' : `${selectedCount}/${task.selectionLimit} выбрано`}
+                />
+              </div>
+
+              <div className="choice-grid">
+                {task.entries.map((entry) => {
+                  const active = task.selectedEntryIds.includes(entry.id)
+                  const limitReached = selectedCount >= task.selectionLimit && !active
+
+                  return (
+                    <ChoiceButton
+                      key={entry.id}
+                      active={active}
+                      disabled={limitReached}
+                      onClick={() => onToggleEntry(task.id, entry.id)}
+                    >
+                      <span className="choice-button__stack">
+                        <strong>{entry.title}</strong>
+                        <small>{entry.rationale}</small>
+                        <small className={`inline-tag inline-tag--${entry.impact === 'high' ? 'critical' : entry.impact === 'medium' ? 'important' : 'low'}`}>
+                          impact: {entry.impact}
+                        </small>
+                      </span>
+                    </ChoiceButton>
+                  )
+                })}
+              </div>
+
+              <ScenarioFooter
+                hintBankRemaining={hintBankRemaining}
+                hintText={task.hint ?? 'Фундамент (данные и договорённости) всегда раньше автоматизации. Без CMDB и согласованного SLA любые надстройки ненадёжны.'}
+                hintUsed={task.hintUsed}
+                hintToken={createHintToken('maturityImprovementTasks', task.id)}
+                onRevealHint={onRevealHint}
+                selectionLabel={`${selectedCount}/${task.selectionLimit} слотов занято`}
+              />
+            </div>
+          )
+        })}
+      </div>
+    </Panel>
+  )
+}
+
+function MaturityRoadmapSection({
+  hintBankRemaining,
+  tasks,
+  onMoveEntry,
+  onRevealHint,
+}: {
+  hintBankRemaining: number
+  tasks: MaturitySequenceTask[]
+  onMoveEntry: (taskId: string, entryId: string, move: RankingMove) => void
+  onRevealHint: (itemId: string) => void
+}) {
+  return (
+    <Panel title="Дорожная карта изменений" icon={Map}>
+      <div className="scenario-list">
+        {tasks.map((task) => (
+          <div key={task.id} className="scenario-card scenario-card--priority">
+            <div className="scenario-card__head">
+              <div>
+                <strong>{task.title}</strong>
+                <p>{task.prompt}</p>
+              </div>
+              <StatusBadge tone="progress" label={!task.touched ? 'не собрано' : `${task.selectedOrderIds.length} позиций`} />
+            </div>
+
+            <div className="ranking-list">
+              {task.selectedOrderIds.map((entryId, index) => {
+                const entry = task.entries.find((item) => item.id === entryId)
+                if (!entry) return null
+
+                return (
+                  <div key={entry.id} className="ranking-card">
+                    <div className="ranking-card__order">{index + 1}</div>
+                    <div className="ranking-card__copy">
+                      <strong>{entry.title}</strong>
+                      <p>{entry.cue}</p>
+                    </div>
+                    <div className="ranking-card__actions">
+                      <button
+                        type="button"
+                        className="icon-button"
+                        onClick={() => onMoveEntry(task.id, entry.id, 'up')}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        onClick={() => onMoveEntry(task.id, entry.id, 'down')}
+                        disabled={index === task.selectedOrderIds.length - 1}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <ScenarioFooter
+              hintBankRemaining={hintBankRemaining}
+              hintText={task.hint ?? 'Порядок организационных изменений: сначала договорённости и данные, затем автоматизация, потом измерение. Нельзя измерять то, чего ещё нет.'}
+              hintUsed={task.hintUsed}
+              hintToken={createHintToken('maturitySequenceTasks', task.id)}
+              onRevealHint={onRevealHint}
+              selectionLabel={task.touched ? 'Дорожная карта перестроена' : 'Ожидается корректный порядок'}
+            />
+          </div>
+        ))}
+      </div>
+    </Panel>
+  )
+}
+
 function ReviewSection({ reviewItems }: { reviewItems: MissionReviewItem[] }) {
   return (
     <Panel title="Разбор решений" icon={ShieldAlert}>
@@ -1317,256 +1814,6 @@ function getSequenceProgressLabel(task: ResponseSequenceTask) {
   return `${task.selectedOrderIds.length} позиций`
 }
 
-function getWorkspaceGuide(mission: MissionState, activeTab: MissionTab) {
-  if (mission.kind === 'governance' && activeTab === 'charter') {
-    return {
-      kicker: 'контур процесса',
-      title: 'Сначала определяем, от какого ущерба вообще строится VM.',
-      body:
-        'На этом шаге мы не обсуждаем инструмент и не собираем шум из находок. Нужно зафиксировать недопустимые события и разложить путь атаки по ролям активов.',
-      points: [
-        {
-          title: 'Выбери бизнес-события',
-          body: 'В основу процесса ложатся деньги, доступность сервиса и компрометация данных, а не технические неудобства команды.',
-        },
-        {
-          title: 'Разметь цепочку атаки',
-          body: 'Периметр, ключевые и целевые системы должны получить осмысленную роль в сценарии нарушения.',
-        },
-        {
-          title: 'Не стартуй со сканера',
-          body: 'Если каркас не собран, следующая фаза превратится в спор о том, что именно сканировать и зачем.',
-        },
-      ],
-      outcome:
-        'После этого шага у команды появится понятный разговор о риске: что именно мы защищаем, через что приходит атака и где проходит граница процесса.',
-    }
-  }
-
-  if (mission.kind === 'governance' && activeTab === 'agreements') {
-    return {
-      kicker: 'договорённости',
-      title: 'Теперь переводим логику процесса в роли, артефакты и выполнимые сроки.',
-      body:
-        'Здесь важно не “назначить цифры”, а собрать управляемый контур: кто владеет процессом, какие артефакты обязательны и как сроки привязаны к реальности ИТ.',
-      points: [
-        {
-          title: 'Закрепи ownership',
-          body: 'VM не живёт без владельца процесса и понятной ответственности ИБ, ИТ и владельцев сервисов.',
-        },
-        {
-          title: 'Согласуй SLA',
-          body: 'Сроки должны учитывать окна изменений, тестирование и возможность компенсирующих мер.',
-        },
-        {
-          title: 'Оставь рабочие артефакты',
-          body: 'Нужны не презентации, а документы и правила, по которым команда реально будет исполнять процесс.',
-        },
-      ],
-      outcome:
-        'На выходе у процесса появляется язык, на котором смогут разговаривать между собой ИБ, ИТ и бизнес.',
-    }
-  }
-
-  if (mission.kind === 'inventory' && activeTab === 'classification') {
-    return {
-      kicker: 'карта активов',
-      title: 'Здесь мы не просто перечисляем системы, а связываем их с риском и режимом обработки.',
-      body:
-        'Категоризация нужна для того, чтобы дальше не спорить о важности актива постфактум. Важен не только хост, но и его роль в недопустимом событии.',
-      points: [
-        {
-          title: 'Определи роль актива',
-          body: 'Периметр, ключевые и целевые системы должны быть разделены без двусмысленности.',
-        },
-        {
-          title: 'Назначь правильный SLA',
-          body: 'Срок зависит от критичности и операционной реальности, а не только от яркости названия уязвимости.',
-        },
-        {
-          title: 'Не путай special-case активы с обычными хостами',
-          body: 'Legacy, mobile и virtual IP требуют отдельного режима учёта и контроля.',
-        },
-      ],
-      outcome:
-        'После этого шага видно, каким активам нужен быстрый цикл, а какие нельзя вести по стандартному шаблону.',
-    }
-  }
-
-  if (mission.kind === 'inventory' && activeTab === 'scan') {
-    return {
-      kicker: 'контроль и покрытие',
-      title: 'Теперь подбираем не “любой скан”, а уместный способ наблюдения за каждым классом активов.',
-      body:
-        'Сканирование должно быть достоверным и безопасным. Для части активов нужен аудит, для части discovery, а некоторые должны идти через agent или ручной контроль.',
-      points: [
-        {
-          title: 'Выбери подходящий источник данных',
-          body: 'Полный аудит полезен не везде: иногда безопаснее discovery, agent или manual-режим.',
-        },
-        {
-          title: 'Исключай осознанно',
-          body: 'Virtual IP и подобные сущности нужно выводить из host-логики без потери связи с периметром.',
-        },
-        {
-          title: 'Смотри на достоверность',
-          body: 'Главная цель этого шага — не покрытие ради покрытия, а доверие к реестру и будущим отчётам.',
-        },
-      ],
-      outcome:
-        'Хороший результат даёт реестр, которому можно верить, и стратегию контроля, которая не ломает инфраструктуру.',
-    }
-  }
-
-  if (mission.kind === 'prioritization' && activeTab === 'queue') {
-    return {
-      kicker: 'первая волна',
-      title: 'Сначала формируем первую очередь, которую ИТ действительно должна взять в работу.',
-      body:
-        'Emergency-слот ограничен. Поэтому сюда попадают только кейсы, которые сейчас дают кратчайший путь к недопустимому событию.',
-      points: [
-        {
-          title: 'Собери первую волну',
-          body: 'Вне очереди должны идти реальные hot-case, а не всё подряд с высоким severity.',
-        },
-        {
-          title: 'Разнеси backlog по режимам',
-          body: 'Срочно, планово, компенсирующие меры и принятие риска — это разные управленческие решения.',
-        },
-        {
-          title: 'Думай ограниченным ресурсом',
-          body: 'Если “срочно” становится всё, приоритизация перестаёт существовать.',
-        },
-      ],
-      outcome:
-        'После этого шага видно, какая часть backlog действительно должна ехать первой, а что можно перевести в управляемый план.',
-    }
-  }
-
-  if (mission.kind === 'prioritization' && activeTab === 'factors') {
-    return {
-      kicker: 'аргументация',
-      title: 'Теперь очередь нужно защитить факторами, а не только intuition и CVSS.',
-      body:
-        'Сильная приоритизация объяснима. Нужно показать, какие именно факторы делают кейс срочным: ущерб, значимость актива, доступность, эксплойт и тренд эксплуатации.',
-      points: [
-        {
-          title: 'Выбери только релевантные факторы',
-          body: 'Лишние причины размывают аргументацию и показывают, что решение собрано “на всякий случай”.',
-        },
-        {
-          title: 'Связывай фактор с активом',
-          body: 'Один и тот же CVSS весит по-разному на тестовом сервере и на целевой системе в периметре.',
-        },
-        {
-          title: 'Покажи, почему ИТ должна согласиться',
-          body: 'Очередь без обоснования быстро превращается в спор между функциями.',
-        },
-      ],
-      outcome:
-        'Хорошо собранный факторный слой делает очередь исполнимой и снимает часть конфликтов между безопасностью и эксплуатацией.',
-    }
-  }
-
-  if (mission.kind === 'response' && activeTab === 'planning') {
-    return {
-      kicker: 'способ обработки',
-      title: 'Не каждая уязвимость лечится патчем — здесь мы выбираем правильный режим обработки.',
-      body:
-        'На этом шаге важно не “закрыть задачу”, а подобрать действие, которое соответствует природе кейса: patch, config, WAF, monitoring или замена компонента.',
-      points: [
-        {
-          title: 'Соотнеси кейс и метод',
-          body: 'Misconfig чинится конфигурацией, zero-day без патча закрывается временной защитой, legacy переводится в исключение.',
-        },
-        {
-          title: 'Выбери реалистичное окно',
-          body: 'Emergency нужен не всегда. Иногда сильнее выглядит корректный planned-режим или formal exception.',
-        },
-        {
-          title: 'Не подменяй снижение риска видимостью работы',
-          body: 'Отправить тикет ещё не значит реально уменьшить поверхность атаки.',
-        },
-      ],
-      outcome:
-        'После этого шага у каждого кейса появляется не просто владелец, а осмысленный способ обработки и правильный темп исполнения.',
-    }
-  }
-
-  if (mission.kind === 'response' && activeTab === 'control') {
-    return {
-      kicker: 'контроль результата',
-      title: 'Закрытие кейса нужно подтвердить, иначе риск останется в системе под видом выполненной работы.',
-      body:
-        'Повторный скан, синхронизация с владельцем, мониторинг и пересмотр SLA — это не бюрократия, а доказательство, что решение реально сработало.',
-      points: [
-        {
-          title: 'Выбери проверку по типу кейса',
-          body: 'Не каждому кейсу нужен весь набор шагов; важна корректная комбинация контроля.',
-        },
-        {
-          title: 'Фиксируй системные срывы',
-          body: 'Если SLA стабильно нарушается, это уже вопрос к процессу, а не к одной конкретной задаче.',
-        },
-        {
-          title: 'Не считай тикет доказательством',
-          body: 'Процесс завершается не тогда, когда задача закрыта, а когда подтверждён результат.',
-        },
-      ],
-      outcome:
-        'Хороший контроль переводит устранение из формального статуса “сделано” в измеримый факт снижения риска.',
-    }
-  }
-
-  if (mission.kind === 'response' && activeTab === 'playbook') {
-    return {
-      kicker: 'кризисный сценарий',
-      title: 'Сейчас тренируем не ответ на один кейс, а последовательность действий команды под давлением.',
-      body:
-        'Плейбук нужен там, где нельзя позволить себе импровизацию: zero-day без патча, повторный срыв SLA, нестабильный периметр или высокое бизнес-давление.',
-      points: [
-        {
-          title: 'Собери шаги в правильном порядке',
-          body: 'Важно не только что делать, но и в какой момент: владельцы, временная защита, мониторинг, формализация исключения.',
-        },
-        {
-          title: 'Держи эскалацию управляемой',
-          body: 'Кризисный процесс не должен превращаться в хаотичную переписку без владельца и следующего шага.',
-        },
-        {
-          title: 'Сохрани след для процесса',
-          body: 'После кризиса команда должна не только потушить инцидент, но и обновить управленческий контур.',
-        },
-      ],
-      outcome:
-        'После этого шага видно, способен ли процесс удерживать редкие, но самые опасные сценарии без ручной самодеятельности.',
-    }
-  }
-
-  return {
-    kicker: 'разбор',
-    title: 'Теперь посмотрим, что из решений выдержало практическую проверку.',
-    body:
-      'Разбор нужен не для галочки, а чтобы увидеть, где решение было действительно сильным, а где оно только выглядело аккуратно на экране.',
-    points: [
-      {
-        title: 'Сильные решения',
-        body: 'Сохраняем то, что можно повторять дальше без дополнительного ручного контроля.',
-      },
-      {
-        title: 'Слабые места',
-        body: 'Смотрим не только на ошибку, но и на её управленческое последствие для процесса.',
-      },
-      {
-        title: 'Следующий модуль',
-        body: 'Идём дальше только с пониманием, что именно стоит унести в следующую фазу.',
-      },
-    ],
-    outcome:
-      'Хороший разбор помогает не просто получить балл, а перенести правильную логику в следующий модуль.',
-  }
-}
-
 function getContextStakeholder(mission: MissionState, activeTab: MissionTab) {
   if (activeTab === 'review') {
     return mission.stakeholders.find((stakeholder) => stakeholder.stance === 'ally') ?? mission.stakeholders[0]
@@ -1589,6 +1836,14 @@ function getContextNote(mission: MissionState, activeTab: MissionTab) {
   } else if (mission.kind === 'prioritization' && activeTab === 'factors') {
     noteIndex = Math.min(1, mission.methodNotes.length - 1)
   } else if (mission.kind === 'response' && activeTab === 'playbook') {
+    noteIndex = Math.min(2, mission.methodNotes.length - 1)
+  } else if (mission.kind === 'metrics' && activeTab === 'dashboard') {
+    noteIndex = Math.min(1, mission.methodNotes.length - 1)
+  } else if (mission.kind === 'metrics' && activeTab === 'interpretation') {
+    noteIndex = Math.min(2, mission.methodNotes.length - 1)
+  } else if (mission.kind === 'improvement' && activeTab === 'improvement') {
+    noteIndex = Math.min(1, mission.methodNotes.length - 1)
+  } else if (mission.kind === 'improvement' && activeTab === 'roadmap') {
     noteIndex = Math.min(2, mission.methodNotes.length - 1)
   }
 
@@ -1616,6 +1871,24 @@ function getTabsForMission(mission: MissionState) {
     return [
       { id: 'queue', label: 'Первая волна', icon: Radar },
       { id: 'factors', label: 'Аргументы', icon: Network },
+      { id: 'review', label: 'Разбор', icon: ShieldAlert },
+    ]
+  }
+
+  if (mission.kind === 'metrics') {
+    return [
+      { id: 'kpi', label: 'KPI', icon: BarChart3 },
+      { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
+      { id: 'interpretation', label: 'PDCA', icon: TrendingUp },
+      { id: 'review', label: 'Разбор', icon: ShieldAlert },
+    ]
+  }
+
+  if (mission.kind === 'improvement') {
+    return [
+      { id: 'audit', label: 'Диагностика', icon: Search },
+      { id: 'improvement', label: 'Улучшения', icon: TrendingUp },
+      { id: 'roadmap', label: 'Дорожная карта', icon: Map },
       { id: 'review', label: 'Разбор', icon: ShieldAlert },
     ]
   }
